@@ -7,16 +7,17 @@ Beräkningen är skriven i **Java 21**. Mobilgränssnittet använder HTML/CSS/Ja
 ## Vad finns i första versionen?
 
 - Välj Links eller Lakes och tee; spela ett hål i taget från 1 till 18. Bana, tee och aktuellt hål sparas lokalt så att rundan kan återupptas.
-- Stiliserad GPS-karta med verkliga geografiska banformer, samt satellit som alternativ. Alla 36 officiella banguidebilder finns som separat referens.
+- Avskalad hålvy med bara det valda Lakes-hålets geografiska former. Hålet orienteras mot green på skärmen; nordpilen visar riktningen. Satellit och områdeskarta är alternativ i Options. Alla 36 officiella banguidebilder finns som separat referens.
 - Placera och dra boll och dagens flagga själv, eller följ bollen med GPS. Flaggan är aldrig en förinställd veckoposition.
+- Spelavstånd och en kort förklaring visas automatiskt när boll och mål har placerats. Väder, kikarmått, bolläge och detaljerade råd ligger i **Options**.
 - Ange avståndskikarens mått till flaggan. Välj vanligt avstånd eller kikare med lutningskompensation, så att höjd inte räknas två gånger.
 - Vindkompass, sex timmars vind-/bydiagram, höjd, temperatur, luftfuktighet, lufttryck, bolläge och bollbana.
 - Uppskattad sidovindsdrift i meter åt höger/vänster, siktkompensation och möjlighet att ange uppmätt flygtid.
 - Förslag på landningspunkt på samma green med större marginal till kända bunkrar, vatten och greenkant. Du väljer själv om förslaget ska användas.
 
-**Par, HCP och teeavstånd för alla 36 hål ingår lokalt.** Även 497 geografiska kartobjekt från OpenStreetMap ingår: bland annat fairways, greener och bunkrar. Lakes har verifierade hållinjer för alla 18 hål och kartan fokuserar på valt hål. Links saknar numrerade hållinjer i denna datakälla; välj boll och flagga på kartan själv. Hålets teeavstånd används aldrig som avstånd för ett aktuellt slag.
+**Par, HCP och teeavstånd för alla 36 hål ingår lokalt.** Även 497 geografiska kartobjekt från OpenStreetMap ingår: bland annat fairways, greener och bunkrar. Lakes har verifierade hållinjer för alla 18 hål och kartan fokuserar på valt hål. Links saknar numrerade hållinjer i denna datakälla. Där visas först guidebilden för valt hål; välj **Placera på GPS-kartan** för att sätta boll och flagga på områdeskartan. Hålets teeavstånd används aldrig som avstånd för ett aktuellt slag.
 
-Kartans former ritas i banguidens färger men i verklig geografisk skala, så att GPS-markören följer kartans koordinater. Originalguiden är en illustration utan verifierad georeferering och används därför som separat bild. Kartdata kan sakna hinder eller vara inaktuella. Sidovindsmodellen och landningsrådet är uppskattningar som behöver kalibreras mot verkliga slag.
+Kartans former ritas i banguidens färger men i verklig geografisk skala, så att GPS-markören följer kartans koordinater. Onumrerade fairways, greener och hinder väljs för hålvyn efter närhet till hållinjen; tillhörigheten är en visningsheuristik, inte en officiell hålindelning. Originalguiden är en illustration utan verifierad georeferering och används därför som separat bild. Kartdata kan sakna hinder eller vara inaktuella. Sidovindsmodellen och landningsrådet är uppskattningar som behöver kalibreras mot verkliga slag.
 
 Väder och terränghöjd har verifierats med riktiga svar från Open-Meteo. Automatiserade GPS-tester använder en simulerad position; GPS och externa satellitplattor på en fysisk iPhone återstår att verifiera.
 
@@ -34,7 +35,7 @@ För att ändra CSS och direkt se resultatet: öppna **`prototype/index.html`** 
 
 `python3 scripts/export-prototype.py` uppdaterar båda prototypversionerna efter ändringar i appen och skapar även en lokal kopia i `.runtime/`. Den fristående rotfilen har inbakad CSS; kör exportkommandot när du vill uppdatera den efter CSS-ändringar.
 
-Välj bana och tee och tryck **Starta rundan**. Välj **Placera själv** för att prova hemifrån. **Prova ett slag · 160 m** lägger ut två exempelpositioner inom The Nationals område. Använd **Placera boll** / **Sätt flaggan**, eller dra markörerna. **Använd GPS** följer din verkliga plats; byte tillbaka till Placera själv stänger GPS och återgår till National-vyn.
+Välj bana och tee och tryck **Starta rundan**. Välj **Placera själv** för att prova hemifrån. **Options → Prova ett slag · 160 m** lägger ut två exempelpositioner inom The Nationals område. Använd **Placera boll** / **Sätt flaggan**, eller dra markörerna. **Använd GPS** följer din verkliga plats; byte tillbaka till Placera själv stänger GPS och återgår till National-vyn.
 
 Den fristående prototypen har en kopia av Java-modellen som jämförs mot Java-API:t i 48 scenarier via `node scripts/check-prototype-model.mjs`. `python3 scripts/smoke-prototype.py` verifierar det exporterade gränssnittet utan nätverks- eller backendåtkomst. Molnets hanterade Chromium blockerar `file://`; därför laddar testet filens innehåll via en lokal testfixture. Direkt filöppning på användarens egen dator har inte verifierats här.
 
@@ -94,6 +95,7 @@ cd mobile && npm run check && cd ..
 python3 scripts/smoke.py
 node scripts/check-prototype-model.mjs
 node scripts/check-landing-advisor.mjs
+node scripts/check-hole-view.mjs
 # Med projektroten serverad lokalt på port 8091:
 python3 scripts/smoke-iphone.py
 ```

@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'golf-caddie-iphone-9fb2b9e00a353340';
+const CACHE = 'golf-caddie-iphone-b8d063bdf3af2368';
 const ASSETS = ['./', './index.html', './install.js', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png', ...["./guides/links-01.png", "./guides/links-02.png", "./guides/links-03.png", "./guides/links-04.png", "./guides/links-05.png", "./guides/links-06.png", "./guides/links-07.png", "./guides/links-08.png", "./guides/links-09.png", "./guides/links-10.png", "./guides/links-11.png", "./guides/links-12.png", "./guides/links-13.png", "./guides/links-14.png", "./guides/links-15.webp", "./guides/links-16.png", "./guides/links-17.png", "./guides/links-18.png", "./guides/lakes-01.png", "./guides/lakes-02.png", "./guides/lakes-03.png", "./guides/lakes-04.webp", "./guides/lakes-05.png", "./guides/lakes-06.webp", "./guides/lakes-07.png", "./guides/lakes-08.png", "./guides/lakes-09.png", "./guides/lakes-10.png", "./guides/lakes-11.png", "./guides/lakes-12.png", "./guides/lakes-13.png", "./guides/lakes-14.png", "./guides/lakes-15.png", "./guides/lakes-16.png", "./guides/lakes-17.png", "./guides/lakes-18.png"]];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

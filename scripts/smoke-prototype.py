@@ -20,16 +20,18 @@ with sync_playwright() as p:
     page.goto(origin, wait_until='domcontentloaded')
     assert page.locator('#hole option').count() == 18
     page.locator('#start-round').click()
+    page.locator('#shot-options-open').click()
     page.locator('#try-demo').click()
     page.locator('#calculate').click()
     page.locator('#result').wait_for(state='visible')
     assert page.locator('#actual-distance').inner_text() == '160'
     assert int(page.locator('#plays-like').inner_text()) > 160
+    page.locator('#shot-options-close').click()
     page.wait_for_timeout(1500)
     page.locator('[data-place-point="ball"]').click()
     page.locator('#map').click(position={'x': 170, 'y': 190})
     assert page.locator('[data-place-point="target"]').get_attribute('aria-pressed') == 'true'
-    assert page.locator('#result').is_hidden()
+    page.locator('#quick-result').wait_for(state='visible')
     page.locator('[data-position-mode="gps"]').click()
     page.wait_for_function("document.querySelector('#gps-status').textContent.includes('GPS aktiv')")
     page.locator('[data-position-mode="manual"]').click()
@@ -37,9 +39,11 @@ with sync_playwright() as p:
     page.wait_for_timeout(1200)
     assert page.evaluate('Math.abs(map.getCenter().lat - 55.5690857) < .001')
     assert page.locator('[data-place-point="ball"]').get_attribute('aria-pressed') == 'true'
+    page.locator('#shot-options-open').click()
     page.locator('#try-demo').click()
     page.locator('#calculate').click()
     page.locator('#result').wait_for(state='visible')
+    page.locator('#shot-options-close').click()
     assert not errors, errors
     page.screenshot(path=str(root/'.runtime/prototype-preview.png'), full_page=True)
     print('PASS: standalone prototype with all network/backend requests blocked; calculations, manual placement, simulated home GPS and return to National.')

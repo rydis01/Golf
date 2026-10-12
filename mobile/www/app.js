@@ -5,7 +5,8 @@ const state = { ball: null, target: null, flag: null, safetyCandidate: null, saf
 try { state.apiBase = localStorage.getItem('golf-api-base') ?? window.GOLF_CONFIG?.apiBase ?? ''; } catch { state.apiBase = window.GOLF_CONFIG?.apiBase ?? ''; }
 if (window.GOLF_LOCAL_ONLY) { state.apiBase = ''; $('settings-open').hidden = true; }
 let map, ballMarker, targetMarker, shotLine, gpsMarker, gpsCircle, courseLayer, courseRequest = 0, weatherRequest = 0, elevationRequest = 0, calculationRequest = 0;
-let toastTimer;
+let toastTimer, autoCalculationTimer;
+let areaMapAllowed = false, mapOrientationKey = null;
 let aimMarker, aimLine, suggestionMarker, landingMarker;
 let nationalMetadata;
 const f = n => new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 }).format(n);
@@ -19,7 +20,8 @@ const num = id => {
 };
 function notify(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 6500); }
 function invalidate() {
-  calculationRequest++;
+  calculationRequest++; clearTimeout(autoCalculationTimer);
+  $('quick-result').hidden = true; $('quick-empty').hidden = false; $('quick-empty').textContent = 'Placera bollen och flaggan.';
   $('result').hidden = true; $('result-empty').hidden = false; $('calculation-error').hidden = true;
   $('warnings').replaceChildren();
   const heading = document.createElement('strong'); heading.textContent = 'En caddie, inte en garanti.';
@@ -84,6 +86,14 @@ function pointsChanged() {
   } else $('map-hint').textContent = '2. Tryck på kartan för att välja ditt mål';
   syncManual();
   updateWeatherStatus();
+  scheduleCalculation();
+}
+function scheduleCalculation() {
+  clearTimeout(autoCalculationTimer);
+  if (!state.roundStarted) return;
+  const laser = $('use-rangefinder').checked;
+  const ready = laser ? $('rangefinder-distance').checkValidity() && $('rangefinder-distance').value.trim() && (state.ball && state.target || $('bearing').value.trim()) : state.ball && state.target || $('use-manual').checked && $('distance').value.trim() && $('bearing').value.trim();
+  if (ready) { $('quick-empty').textContent = 'Räknar spelavstånd…'; autoCalculationTimer = setTimeout(calculate, 180); }
 }
 function syncManual() {
   const laser = $('use-rangefinder').checked;
@@ -127,21 +137,22 @@ function startRound(resume = false) {
   const saved = resume ? savedRound() : null;
   if (saved) { state.course = saved.course; selectCourseMetadata(); $('tee').value = saved.tee; $('hole').value = saved.hole; }
   else { $('tee').value = $('setup-tee').value; $('hole').value = '1'; }
-  state.roundStarted = true;
+  state.roundStarted = true; document.body.classList.add('playing'); areaMapAllowed = false;
   $('round-setup').hidden = true; $('round-header').hidden = false; $('round-workspace').hidden = false;
   map?.invalidateSize();
-  clearShot(); showHoleInfo(); drawCourse(false); focusHole();
+  clearShot(); showHoleInfo(); changeMap(false); focusHole();
   requestAnimationFrame(() => map?.invalidateSize());
 }
 function changeHole(number) {
   if (!Number.isInteger(number) || number < 1 || number > 18) return;
-  $('hole').value = String(number); clearShot(); focusHole();
+  $('hole').value = String(number); areaMapAllowed = false; changeMap(false); $('shot-options').close(); clearShot(); focusHole();
   $('round-header').scrollIntoView({ block: 'start', behavior: 'instant' });
 }
 function setupMap() {
   if (!window.L) { $('map-error').hidden = false; return; }
   // Verified National center from OSM way 34563422 / Nominatim.
   map = L.map('map', { zoomControl: true }).setView([55.5690857, 13.1887799], 15);
+  map.attributionControl.addAttribution('© OpenStreetMap contributors');
   changeMap(false);
   map.on('click', e => {
     if (state.positionMode === 'manual' && state.placePoint === 'ball') { setBall(point(e.latlng)); choosePoint('target'); }
@@ -154,6 +165,7 @@ function choosePoint(which) {
   $('map-hint').textContent = which === 'ball' ? 'Tryck där du vill placera bollen' : 'Tryck där dagens flagga står';
 }
 async function setPositionMode(mode, focus = true) {
+  if (mode === 'gps' && !window.HoleView.select(state.courseData?.features || [],state.course,$('hole').value).line) { areaMapAllowed = true; changeMap(false); map.invalidateSize(); }
   const previousMode = state.positionMode;
   state.positionMode = mode;
   document.querySelectorAll('[data-position-mode]').forEach(button => { const selected = button.dataset.positionMode === mode; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
@@ -175,6 +187,7 @@ async function setPositionMode(mode, focus = true) {
   }
 }
 async function tryDemo() {
+  if (!window.HoleView.select(state.courseData?.features || [],state.course,$('hole').value).line) { areaMapAllowed = true; changeMap(false); map.invalidateSize(); }
   await setPositionMode('manual', false);
   const ball = { lat: 55.5690857, lon: 13.1887799 };
   const target = { lat: ball.lat + 160 / 6371000 * 180 / Math.PI, lon: ball.lon };
@@ -185,17 +198,43 @@ async function tryDemo() {
 }
 function changeMap(satellite) {
   if (!map) return;
-  if (state.layer) map.removeLayer(state.layer);
-  state.layer = L.tileLayer(satellite ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  if (satellite && !window.HoleView.select(state.courseData?.features || [],state.course,$('hole').value).line) areaMapAllowed = true;
+  if (state.layer) map.removeLayer(state.layer); state.layer = null;
+  ['satellite', 'street'].forEach(id => { const selected = (id === 'satellite') === satellite; $(id).classList.toggle('selected', selected); $(id).setAttribute('aria-pressed', selected); });
+  if (satellite || areaMapAllowed) orientMap(null);
+  if (satellite || areaMapAllowed) state.layer = L.tileLayer(satellite ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: satellite ? 19 : 19,
     attribution: satellite ? 'Tiles © Esri — Esri, Maxar, Earthstar Geographics & contributors' : '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     opacity: satellite ? 1 : 0.65
   });
-  state.layer.on('tileerror', () => $('map-error').hidden = false);
+  if (state.layer) { state.layer.on('tileerror', () => $('map-error').hidden = false);
   state.layer.on('tileload', () => $('map-error').hidden = true);
-  state.layer.addTo(map);
+  state.layer.addTo(map); }
+  if (!state.layer) $('map-error').hidden = true;
   ['satellite', 'street'].forEach(id => { const selected = (id === 'satellite') === satellite; $(id).classList.toggle('selected', selected); $(id).setAttribute('aria-pressed', selected); });
   drawCourse(false);
+}
+function orientMap(line) {
+  const isolated = line && !areaMapAllowed && !$('satellite').classList.contains('selected');
+  const key = isolated ? `${state.course}/${$('hole').value}` : 'north';
+  if (mapOrientationKey === key) return;
+  mapOrientationKey = key;
+  let bearing = 0;
+  if (isolated) {
+    const coordinates=line.geometry.coordinates;
+    const a=coordinates[0],b=coordinates.at(-1);
+    bearing=geoBearing({lat:a[1],lon:a[0]},{lat:b[1],lon:b[0]});
+    const projection=L.CRS.EPSG3857.projection;
+    const origin=projection.project(L.latLng(a[1],a[0]));
+    const angle=bearing*Math.PI/180,cos=Math.cos(angle),sin=Math.sin(angle);
+    map.options.crs=L.extend({},L.CRS.EPSG3857,{projection:{
+      bounds:projection.bounds,
+      project(latlng) {const p=projection.project(latlng),x=p.x-origin.x,y=p.y-origin.y;return L.point(origin.x+cos*x-sin*y,origin.y+sin*x+cos*y);},
+      unproject(p) {const x=p.x-origin.x,y=p.y-origin.y;return projection.unproject(L.point(origin.x+cos*x+sin*y,origin.y-sin*x+cos*y));}
+    }});
+  } else map.options.crs=L.CRS.EPSG3857;
+  map.setView(map.getCenter(),map.getZoom(),{reset:true});
+  $('north-arrow').style.transform=`rotate(${-bearing}deg)`;
 }
 const courseStyle = feature => {
   const tags = feature.properties.tags, type = tags.golf;
@@ -209,7 +248,11 @@ const courseStyle = feature => {
 function drawCourse(focus = true) {
   if (!map || !state.courseData) return;
   if (courseLayer) map.removeLayer(courseLayer);
-  const features = state.courseData.features.filter(feature => feature.properties.course === 'unassigned' || feature.properties.course === state.course).sort((a,b) => {
+  const selection = window.HoleView.select(state.courseData.features, state.course, $('hole').value);
+  orientMap(selection.line);
+  const fallback = state.roundStarted && !selection.line && !areaMapAllowed;
+  $('hole-fallback').hidden = !fallback; $('hole-map-shell').hidden = fallback; $('hole-map-footer').hidden = fallback; $('position-controls').hidden = fallback;
+  const features = (selection.line && !areaMapAllowed ? selection.features : areaMapAllowed ? state.courseData.features.filter(feature => feature.properties.course === 'unassigned' || feature.properties.course === state.course) : []).sort((a,b) => {
     const priority = f => ({ golf_course:0, rough:1, fairway:3, tee:4, green:5, bunker:6, hole:7 }[f.properties.tags.golf || f.properties.tags.leisure] ?? 2);
     return priority(a)-priority(b);
   });
@@ -222,6 +265,21 @@ function drawCourse(focus = true) {
       layer.bindPopup(popup);
     }
   }).addTo(map);
+  if (!areaMapAllowed && !$('satellite').classList.contains('selected')) {
+    const svg = map.getPanes().overlayPane.querySelector('svg');
+    if (svg && !svg.querySelector('#fairway-grass')) {
+      const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+      defs.innerHTML='<linearGradient id="fairway-grass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#cbd784"/><stop offset=".48" stop-color="#a9bf56"/><stop offset="1" stop-color="#c5ce77"/></linearGradient><linearGradient id="green-grass"><stop stop-color="#cce28a"/><stop offset="1" stop-color="#a7c458"/></linearGradient><filter id="terrain-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="1" dy="3" stdDeviation="3" flood-color="#465828" flood-opacity=".22"/></filter>';
+      svg.prepend(defs);
+    }
+    courseLayer.eachLayer(layer=>{
+      const type=layer.feature.properties.tags.golf;
+      if (layer._path && ['fairway','green','tee','bunker'].includes(type)) {
+        layer._path.setAttribute('filter','url(#terrain-shadow)');
+        if(type==='fairway'||type==='green') layer._path.setAttribute('fill',`url(#${type==='fairway'?'fairway-grass':'green-grass'})`);
+      }
+    });
+  }
   const exact = features.filter(feature => feature.properties.course === state.course);
   if (focus && exact.length) {
     const bounds = L.geoJSON({ type: 'FeatureCollection', features: exact }).getBounds();
@@ -241,13 +299,15 @@ function showHoleInfo() {
   $('round-hole-info').textContent = `Par ${hole.par} · HCP ${hole.hcp} · tee ${$('tee').value}: ${hole.tees[$('tee').value]} m`;
   $('hole-progress').textContent = `${hole.number} / 18`;
   $('previous-hole').disabled = hole.number === 1; $('next-hole').disabled = hole.number === 18;
-  $('next-hole').textContent = hole.number === 18 ? 'Sista hålet' : 'Nästa hål →';
+  $('next-hole').textContent = '→'; $('next-hole').setAttribute('aria-label',hole.number === 18 ? 'Sista hålet' : 'Nästa hål');
+  $('map-hole-title').textContent = `${course.name} · hål ${hole.number}`;
   $('guide-title').textContent = `${course.name} · hål ${hole.number}`;
   const guide = hole.guide;
   $('hole-guide').hidden = !guide;
   if (guide) {
     const assetBase = window.GOLF_ASSET_BASE;
     const source = window.GOLF_LOCAL_ONLY ? guide.localPath : assetBase ? assetBase + guide.localPath : window.GOLF_PROTOTYPE ? guide.sourceUrl : guide.localPath;
+    $('focused-hole-guide').src = source; $('focused-hole-guide').alt = `${course.name} · hål ${hole.number}`;
     $('hole-guide').src = source; $('hole-guide').alt = `${course.name}, hål ${hole.number}, officiell banguide`;
     $('guide-source').href = guide.sourceUrl;
   }
@@ -267,11 +327,13 @@ function selectCourseMetadata() {
   showHoleInfo();
 }
 function focusHole() {
-  showHoleInfo();
+  showHoleInfo(); drawCourse(false);
   const features = state.courseData?.features.filter(feature => feature.properties.course === state.course && feature.properties.tags.golf === 'hole' && feature.properties.tags.ref === $('hole').value) || [];
   if (map && features.length) {
-    const bounds = L.geoJSON({ type: 'FeatureCollection', features }).getBounds();
-    if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 18, animate: true });
+    const selection = window.HoleView.select(state.courseData.features,state.course,$('hole').value);
+    const bounds = L.geoJSON({ type:'FeatureCollection',features:selection.features }).getBounds();
+    map.invalidateSize();
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 18, animate: false });
   } else $('course-status').textContent = 'Hållinjen för detta Links-hål saknas. Banguide och verkliga banformer finns; placera boll och mål manuellt.';
   // Hole length is not the current shot's carry. Never replace shot distance or guess a flag.
 }
@@ -358,7 +420,7 @@ async function fetchWeather() {
     Object.entries(values).forEach(([id, value]) => $(id).value = value);
     state.weather = { point: { ...p }, fetchedAt: Date.now(), time: c.time, timezone: data.timezone || 'leverantörens tidszon' };
     $('weather-title').textContent = c.precipitation > 0 ? 'Nederbörd på banan' : 'Väder vid bollen';
-    updateWeatherStatus(); weatherVisuals(); showForecast(data); invalidate();
+    updateWeatherStatus(); weatherVisuals(); showForecast(data); invalidate(); scheduleCalculation();
   } catch (e) { if (id === weatherRequest) { updateWeatherStatus(); notify(e.message + ' Vädervärdena har inte ersatts.'); } }
   finally { $('fetch-weather').disabled = false; }
 }
@@ -372,7 +434,7 @@ async function fetchElevation() {
     if (!Array.isArray(data.elevation) || data.elevation.length !== 2 || data.elevation.some(x => !Number.isFinite(x))) throw new Error('Höjddata saknas. Ange höjdskillnaden manuellt.');
     $('elevation').value = Math.round((data.elevation[1] - data.elevation[0]) * 10) / 10;
     $('elevation-status').textContent = `Open-Meteo: boll ${f(data.elevation[0])} m, mål ${f(data.elevation[1])} m. Grov terrängmodell; kontrollera värdet.`;
-    invalidate();
+    invalidate(); scheduleCalculation();
   } catch (e) { notify(e.message); }
   finally { $('fetch-elevation').disabled = false; }
 }
@@ -455,6 +517,7 @@ $('choose-safe-landing').addEventListener('click',()=>{
   pointsChanged();calculate();
 });
 async function calculate() {
+  clearTimeout(autoCalculationTimer);
   $('calculation-error').hidden = true;
   let payload, shotContext;
   try {
@@ -499,7 +562,12 @@ async function calculate() {
     if (shotContext.laser) { const item = document.createElement('li'); item.textContent = shotContext.slope ? 'Utgår från kikarens höjdkorrigerade spelavstånd. Vind, luft och bolläge justeras separat.' : 'Utgår från ditt uppmätta avstånd till flaggan. Riktning, höjd och slagets variation behöver fortfarande stämma.'; list.append(item); }
     if(shotContext.safeLanding) {const item=document.createElement('li');item.textContent='Landningsytans avstånd är uppskattat från kartan, med kikaravståndet som referens om det används. Höjden antas vara samma som vid flaggan; kontrollera den.';list.append(item);}
     $('warnings').replaceChildren(list); $('result-empty').hidden = true; $('result').hidden = false;
-    if (window.innerWidth < 651) $('result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
+    $('quick-distance').textContent = meters(result.playsLike);
+    const adjustments = result.adjustments.filter(a=>Math.abs(a.meters)>=.5).sort((a,b)=>Math.abs(b.meters)-Math.abs(a.meters)).slice(0,2);
+    $('quick-reason').textContent = `${meters(result.distance)} m till målet` + (adjustments.length ? ' · '+adjustments.map(a=>`${a.label==='Vind'?(result.headwind>=0?'Motvind':'Medvind'):a.label==='Höjd'?(Number($('elevation').value)>=0?'Uppför':'Nedför'):a.label} ${a.meters>0?'+':''}${meters(a.meters)} m`).join(' · ') : ' · ingen större justering');
+    $('quick-weather').textContent = state.weather ? 'Hämtat väder' : 'Manuellt väder · ändra i Options';
+    $('quick-aim').textContent = Math.abs(result.aimOffset)>=.5 ? `Sikta ${f(Math.abs(result.aimOffset))} m åt ${result.aimOffset>0?'höger':'vänster'}` : '';
+    $('quick-empty').hidden = true; $('quick-result').hidden = false;
   } catch (e) { if (id === calculationRequest) { $('calculation-error').textContent = e.message; $('calculation-error').hidden = false; } }
   finally { $('calculate').disabled = false; }
 }
@@ -511,7 +579,7 @@ document.querySelectorAll('[data-lie]').forEach(button => button.addEventListene
   state.lie = button.dataset.lie;
   document.querySelectorAll('[data-lie]').forEach(b => { b.classList.toggle('selected', b === button); b.setAttribute('aria-pressed', b === button); });
   $('lie-help').textContent = { fairway: 'Ren kontakt från kortklippt gräs.', rough: 'Gräs bakom bollen kan minska carry. Stor variation.', flyer: 'Lite gräs mellan boll och klubba kan ge mindre spinn och extra längd. Kan inte avgöras av GPS.', sand: 'Fairwaybunker: rådet är osäkert och förutsätter bollträff först. Gäller inte ett greenbunkerslag.' }[state.lie];
-  invalidate();
+  invalidate(); scheduleCalculation();
 }));
 document.querySelectorAll('[data-course]').forEach(button => button.addEventListener('click', () => {
   state.course = button.dataset.course;
@@ -522,14 +590,14 @@ $('start-round').addEventListener('click', () => startRound()); $('resume-round'
 $('setup-tee').addEventListener('change', () => { $('tee').value = $('setup-tee').value; showHoleInfo(); });
 $('previous-hole').addEventListener('click', () => changeHole(Number($('hole').value) - 1));
 $('next-hole').addEventListener('click', () => changeHole(Number($('hole').value) + 1));
-$('change-course').addEventListener('click', async () => { state.roundStarted = false; await setPositionMode('manual', false); clearShot(); $('round-workspace').hidden = true; $('round-header').hidden = true; $('round-setup').hidden = false; $('round-setup').scrollIntoView(); });
+$('change-course').addEventListener('click', async () => { state.roundStarted = false; document.body.classList.remove('playing'); $('shot-options').close(); await setPositionMode('manual', false); clearShot(); $('round-workspace').hidden = true; $('round-header').hidden = true; $('round-setup').hidden = false; $('round-setup').scrollIntoView(); });
 $('hole').addEventListener('change', () => changeHole(Number($('hole').value))); $('tee').addEventListener('change', showHoleInfo);
-$('use-rangefinder').addEventListener('change', () => { syncManual(); invalidate(); });
-$('rangefinder-type').addEventListener('change', () => { syncManual(); invalidate(); });
-$('rangefinder-distance').addEventListener('input', () => { state.rangefinderBall = state.ball ? { ...state.ball } : null; $('rangefinder-status').textContent = 'Mätning för detta inspel. Mät igen om du flyttar dig eller byter mål.'; invalidate(); });
-['distance', 'bearing', 'elevation', 'trajectory', 'wet','flight-time'].forEach(id => $(id).addEventListener('input', () => { if (id === 'elevation') { elevationRequest++; $('elevation-status').textContent = 'Manuellt värde.'; } invalidate(); }));
-['temperature', 'humidity', 'pressure', 'wind', 'wind-from', 'gusts'].forEach(id => $(id).addEventListener('input', () => { weatherRequest++; state.weather = null; $('forecast').hidden = true; $('weather-title').textContent = 'Dina förhållanden'; updateWeatherStatus(); weatherVisuals(); invalidate(); }));
-$('use-manual').addEventListener('change', () => { syncManual(); invalidate(); });
+$('use-rangefinder').addEventListener('change', () => { syncManual(); invalidate(); scheduleCalculation(); });
+$('rangefinder-type').addEventListener('change', () => { syncManual(); invalidate(); scheduleCalculation(); });
+$('rangefinder-distance').addEventListener('input', () => { state.rangefinderBall = state.ball ? { ...state.ball } : null; $('rangefinder-status').textContent = 'Mätning för detta inspel. Mät igen om du flyttar dig eller byter mål.'; invalidate(); scheduleCalculation(); });
+['distance', 'bearing', 'elevation', 'trajectory', 'wet','flight-time'].forEach(id => $(id).addEventListener('input', () => { if (id === 'elevation') { elevationRequest++; $('elevation-status').textContent = 'Manuellt värde.'; } invalidate(); scheduleCalculation(); }));
+['temperature', 'humidity', 'pressure', 'wind', 'wind-from', 'gusts'].forEach(id => $(id).addEventListener('input', () => { weatherRequest++; state.weather = null; $('forecast').hidden = true; $('weather-title').textContent = 'Dina förhållanden'; updateWeatherStatus(); weatherVisuals(); invalidate(); scheduleCalculation(); }));
+$('use-manual').addEventListener('change', () => { syncManual(); invalidate(); scheduleCalculation(); });
 $('gps-ball').addEventListener('change', () => { if ($('gps-ball').checked && state.gps) setBall(state.gps); else if ($('gps-ball').checked) notify('Starta GPS med Min position för att följa bollen.'); });
 $('calculate').addEventListener('click', calculate); $('fetch-weather').addEventListener('click', fetchWeather); $('fetch-elevation').addEventListener('click', fetchElevation); $('fetch-course').addEventListener('click', fetchCourse);
 $('location').addEventListener('click', startGps); $('stop-gps').addEventListener('click', () => setPositionMode('manual').catch(e => notify(e.message)));
@@ -546,6 +614,10 @@ $('save-settings').addEventListener('click', () => {
     $('settings').close(); notify('Anslutningen sparad. Hämta väder och banformer från den valda servern.');
   } catch (e) { $('settings-error').textContent = e.message; $('settings-error').hidden = false; }
 });
+$('shot-options-open').addEventListener('click', () => $('shot-options').showModal());
+$('result-details').addEventListener('click', () => $('shot-options').showModal());
+$('shot-options-close').addEventListener('click', () => { $('shot-options').close(); scheduleCalculation(); });
+$('show-area-map').addEventListener('click', () => { areaMapAllowed = true; changeMap(false); map.invalidateSize(); map.setView([55.5690857,13.1887799],15); });
 setupMap(); syncManual(); weatherVisuals(); loadMetadata();
 setInterval(updateWeatherStatus, 60000);
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.watchId !== null) setPositionMode('manual', false).catch(e => notify(e.message)); });

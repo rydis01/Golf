@@ -18,15 +18,17 @@ Arbetsflödet publicerar endast `iphone/`, inte Java-projektet eller resten av r
 3. Tryck **Dela → Lägg till på hemskärmen** och välj Lägg till.
 4. Starta **Golf Caddie** från den nya ikonen.
 
-Välj **Links eller Lakes**, tee och **Starta på hål 1**. Använd Föregående/Nästa för hål 1–18; senaste bana, tee och hålnummer sparas lokalt så att du kan fortsätta ronden. Själva boll-/flaggpositionerna och kikaravstånden sparas inte mellan sessioner.
+Välj **Links eller Lakes**, tee och **Starta på hål 1**. Använd pilarna för Föregående/Nästa för hål 1–18; senaste bana, tee och hålnummer sparas lokalt så att du kan fortsätta ronden. Själva boll-/flaggpositionerna och kikaravstånden sparas inte mellan sessioner.
 
-På banan väljer du **Använd GPS** och godkänner platsåtkomst, sätter dagens flagga själv och fyller vid behov i kikaravstånd. Välj om kikaren visar utan eller med slope. Sidovindsrådet anger uppskattad drift och sikte. Ett landningsförslag vid bunker/vatten behöver väljas av dig innan slaget räknas om. Hemifrån kan du välja **Placera själv** eller **Prova ett slag · 160 m**. GPS startar endast efter ditt val och stoppas när du byter till manuell placering eller när appen går till bakgrunden.
+I den avskalade hålvyn visas spelavståndet och en kort förklaring automatiskt när boll och flagga placerats. **Options** öppnar väder, kikarmått, bolläge, höjd och det fullständiga rådet. Hållinjen på Lakes orienteras längs skärmen med green uppåt; nordpilen visar den geografiska riktningen.
+
+På banan väljer du **Använd GPS** och godkänner platsåtkomst, sätter dagens flagga själv och fyller vid behov i kikaravstånd. Välj om kikaren visar utan eller med slope. Sidovindsrådet anger uppskattad drift och sikte. Ett landningsförslag vid bunker/vatten behöver väljas av dig innan slaget räknas om. Hemifrån kan du välja **Placera själv** eller **Options → Prova ett slag · 160 m**. GPS startar endast efter ditt val och stoppas när du byter till manuell placering eller när appen går till bakgrunden.
 
 ## Utan internet
 
 Efter en godkänd första laddning kan appen öppnas offline med service worker och lokal cache. Beräkning, sidovinds-/landningsråd, 497 geografiska banformer, officiella par/HCP/teeavstånd och originalguidebilder för 36 hål finns lokalt. Guidebilderna omfattar ungefär 24 MiB; första laddningen behöver få tid att spara dem innan appen visar offlineklar status. GPS beror på enhetens stöd, behörighet och signal. Satellit- och externa baskartbilder, nytt väder och terränghöjd behöver internet. Ange väder och höjd manuellt när du är offline. Kartplattor förladdas inte för offlinebruk.
 
-Banvyn återger de geografiska formerna i guideinspirerade färger med samma kartprojektion som GPS. Originalguidebilden har inte sträckts till godtyckliga GPS-gränser. Lakes har 18 identifierade hållinjer från OSM:s Lakes-relation; Links har inga identifierade hållinjer i det importerade underlaget och behöver manuell målplacering. Dagens flaggposition är alltid spelarens val.
+Banvyn återger de geografiska formerna i guideinspirerade färger med samma kartprojektion som GPS. Originalguidebilden har inte sträckts till godtyckliga GPS-gränser. Lakes har 18 identifierade hållinjer från OSM:s Lakes-relation; Links har inga identifierade hållinjer i det importerade underlaget och visar därför guidebilden först. **Placera på GPS-kartan** öppnar områdeskartan för manuell placering. Onumrerade former i Lakes-hålvyn väljs efter närhet till hållinjen; det är ingen officiell hålindelning. Dagens flaggposition är alltid spelarens val.
 
 iOS kan rensa webbappens cache vid lagringsbrist eller när du tar bort webbplatsdata. Öppna därför appen en gång med internet före rundan och kontrollera statusraden. iOS/Safari kan behöva separat platsgodkännande för appen på hemskärmen.
 
