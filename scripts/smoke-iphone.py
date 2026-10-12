@@ -14,6 +14,15 @@ with sync_playwright() as p:
     context.route('https://**/*',lambda route:route.abort())
     page=context.new_page(); errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
+    def check_zoom(hole):
+        stats=page.evaluate('''() => {
+          const features=HoleView.select(state.courseData.features,state.course,document.querySelector('#hole').value).features;
+          const points=features.flatMap(f=>f.geometry.type==='Polygon'?f.geometry.coordinates.flat():f.geometry.coordinates).map(p=>map.latLngToContainerPoint([p[1],p[0]]));
+          const x=points.map(p=>p.x),y=points.map(p=>p.y),size=map.getSize();
+          return {count:features.filter(f=>f.properties.tags.golf==='hole').length,ref:features.find(f=>f.properties.tags.golf==='hole').properties.tags.ref,fill:Math.max((Math.max(...x)-Math.min(...x))/size.x,(Math.max(...y)-Math.min(...y))/size.y),inside:Math.min(...x)>=10 && Math.min(...y)>=10 && Math.max(...x)<=size.x-10 && Math.max(...y)<=size.y-10};
+        }''')
+        assert stats['count']==1 and int(stats['ref'])==hole, stats
+        assert stats['fill']>.80 and stats['inside'], stats
     page.goto('http://127.0.0.1:8091/iphone/',wait_until='domcontentloaded')
     page.wait_for_function("document.querySelector('#offline-state').textContent.includes('Sparad på telefonen')")
     page.wait_for_function('navigator.serviceWorker.controller !== null')
@@ -24,6 +33,7 @@ with sync_playwright() as p:
     assert page.evaluate('state.layer === null'), 'The isolated view must not show tiles of surrounding holes'
     assert page.evaluate("courseLayer.toGeoJSON().features.filter(f=>f.properties.tags.golf==='hole').every(f=>f.properties.tags.ref==='1')")
     assert page.evaluate("courseLayer.toGeoJSON().features.some(f=>f.properties.tags.golf==='fairway')")
+    check_zoom(1)
     # Place ball and flag through actual map taps, using two points on the real hole.
     page.wait_for_timeout(300)
     for fraction in [.45,.75]:
@@ -51,6 +61,7 @@ with sync_playwright() as p:
     # A new hole removes the old shot and updates the isolated geometry.
     page.locator('#next-hole').tap()
     assert page.locator('#quick-result').is_hidden()
+    check_zoom(2)
     assert page.locator('#rangefinder-distance').input_value()==''
     assert page.evaluate("courseLayer.toGeoJSON().features.filter(f=>f.properties.tags.golf==='hole').every(f=>f.properties.tags.ref==='2')")
     page.locator('#shot-options-open').tap()
@@ -71,16 +82,25 @@ with sync_playwright() as p:
     page.locator('[data-position-mode="gps"]').tap();page.wait_for_function("document.querySelector('#gps-status').textContent.includes('GPS aktiv')")
     page.locator('[data-position-mode="manual"]').tap()
     page.locator('#next-hole').tap()
-    for _ in range(15):page.locator('#next-hole').tap()
+    check_zoom(3)
+    for hole in range(4,19):
+        page.locator('#next-hole').tap();check_zoom(hole)
     assert '18' in page.locator('#hole-title').inner_text() and page.locator('#next-hole').is_disabled()
     page.locator('#change-course').tap();page.locator('[data-course="links"]').tap();page.locator('#start-round').tap()
-    page.wait_for_function("document.querySelector('#focused-hole-guide').complete && document.querySelector('#focused-hole-guide').naturalWidth>0")
-    assert page.locator('#hole-fallback').is_visible() and page.locator('#hole-map-shell').is_hidden()
-    assert 'links-01' in page.locator('#focused-hole-guide').get_attribute('src')
-    page.locator('#show-area-map').tap();assert page.locator('#hole-map-shell').is_visible()
-    page.locator('#next-hole').tap();assert page.locator('#hole-fallback').is_visible()
+    assert page.locator('#hole-fallback').is_hidden() and page.locator('#hole-map-shell').is_visible()
+    assert page.evaluate("courseLayer.toGeoJSON().features.some(f=>f.properties.tags.golf==='green')")
+    assert page.evaluate("HoleView.select(state.courseData.features,'links',1).line.properties.approximate")
+    # Every Links hole opens its own geographic map; verify a tight initial fit.
+    for hole in range(1,19):
+        assert page.locator('#hole-fallback').is_hidden()
+        check_zoom(hole)
+        if hole==1: page.screenshot(path=str(root/'.runtime/iphone-links-map.png'))
+        if hole<18: page.locator('#next-hole').tap()
+    page.reload(wait_until='domcontentloaded');page.locator('#resume-round').tap()
+    assert '18' in page.locator('#hole-title').inner_text()
+    assert page.locator('#hole-fallback').is_hidden()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     assert not errors,errors
     page.screenshot(path=str(root/'.runtime/iphone-focused-preview.png'),full_page=True)
-    print('PASS: focused hole geometry, hidden options, actual map taps with automatic advice, laser/slope automatic updates, clean hole changes, cached guide images, real offline reload, simulated GPS, hole 18 boundary, and explicit Links guide/GPS fallback.')
+    print('PASS: focused hole geometry, hidden options, actual map taps with automatic advice, laser/slope automatic updates, clean hole changes, cached guide images, real offline reload, simulated GPS, hole 18 boundary, and 18 Links maps with tight zoom and offline resume.')
     browser.close()

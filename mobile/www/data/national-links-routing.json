@@ -1,0 +1,99 @@
+{
+  "course": "links",
+  "sourceUrl": "https://thenational.se/wp-content/uploads/2023/10/386414_PGA_Links_Course.pdf",
+  "sourcePage": 3,
+  "sourceSha256": "086c50baba80c9845c7c2e0662e988cfe1683b604dfc01887d7e2fa36598678b",
+  "method": "Manuell korsreferens av officiell översiktskarta och hålbilder mot OSM-former. Hållinjen är en ungefärlig visningsreferens mellan kartlagd tee och green, inte en officiell GPS-hållinje eller dagens flagga.",
+  "holes": [
+    {
+      "number": 1,
+      "teeReference": "way/210360474",
+      "greenReference": "way/210360411"
+    },
+    {
+      "number": 2,
+      "teeReference": "way/210360553",
+      "greenReference": "way/210413014"
+    },
+    {
+      "number": 3,
+      "teeReference": "way/210360470",
+      "greenReference": "way/210412975"
+    },
+    {
+      "number": 4,
+      "teeReference": "way/210360450",
+      "greenReference": "way/210412996"
+    },
+    {
+      "number": 5,
+      "teeReference": "way/210360485",
+      "greenReference": "way/210412997"
+    },
+    {
+      "number": 6,
+      "teeReference": "way/210360525",
+      "greenReference": "way/210413022"
+    },
+    {
+      "number": 7,
+      "teeReference": "way/210360444",
+      "greenReference": "way/210413023"
+    },
+    {
+      "number": 8,
+      "teeReference": "way/210360498",
+      "greenReference": "way/210413020"
+    },
+    {
+      "number": 9,
+      "teeReference": "way/210360566",
+      "greenReference": "way/210412985"
+    },
+    {
+      "number": 10,
+      "teeReference": "way/210360427",
+      "greenReference": "way/210412972"
+    },
+    {
+      "number": 11,
+      "teeReference": "way/210360505",
+      "greenReference": "way/210413018"
+    },
+    {
+      "number": 12,
+      "teeReference": "way/210360464",
+      "greenReference": "way/210412999"
+    },
+    {
+      "number": 13,
+      "teeReference": "way/210360536",
+      "greenReference": "way/210413027"
+    },
+    {
+      "number": 14,
+      "teeReference": "way/210360545",
+      "greenReference": "way/210412965"
+    },
+    {
+      "number": 15,
+      "teeReference": "way/210360534",
+      "greenReference": "way/210413019"
+    },
+    {
+      "number": 16,
+      "teeReference": "way/210360494",
+      "greenReference": "way/210413003"
+    },
+    {
+      "number": 17,
+      "teeReference": "way/210360480",
+      "greenReference": "way/210412968"
+    },
+    {
+      "number": 18,
+      "teeReference": "way/210360560",
+      "greenReference": "way/210413017"
+    }
+  ]
+}

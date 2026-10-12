@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 import sys
+import subprocess
 import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parent.parent
@@ -38,3 +39,7 @@ for course in ['links','lakes']:
     known = [f for f in holes if f['properties']['course'] == course]
     print(course, len(known), 'identified hole centerlines')
 print('Wrote',len(features),'real vector features;',path.stat().st_size,'bytes')
+
+# Preserve the separately documented guide cross-reference after an OSM refresh.
+if (root/'mobile/www/data/national-links-routing.json').exists():
+    subprocess.run([sys.executable, str(root/'scripts/import-links-routing.py')], check=True)

@@ -109,6 +109,7 @@ function clearRangefinder(message = '') {
   syncManual(); invalidate();
 }
 function clearShot() {
+  clearTimeout(toastTimer); $('toast').hidden = true;
   [ballMarker, targetMarker, shotLine,landingMarker].forEach(layer => layer && map?.removeLayer(layer));
   ballMarker = targetMarker = shotLine = landingMarker = null; state.ball = state.target = state.flag = state.safeLanding = null;
   clearRangefinder(); $('rangefinder-type').value = 'raw';
@@ -151,7 +152,7 @@ function changeHole(number) {
 function setupMap() {
   if (!window.L) { $('map-error').hidden = false; return; }
   // Verified National center from OSM way 34563422 / Nominatim.
-  map = L.map('map', { zoomControl: true }).setView([55.5690857, 13.1887799], 15);
+  map = L.map('map', { zoomControl: true, zoomSnap: 0.05, zoomDelta: 0.25 }).setView([55.5690857, 13.1887799], 15);
   map.attributionControl.addAttribution('© OpenStreetMap contributors');
   changeMap(false);
   map.on('click', e => {
@@ -281,12 +282,13 @@ function drawCourse(focus = true) {
     });
   }
   const exact = features.filter(feature => feature.properties.course === state.course);
-  if (focus && exact.length) {
+  if (focus && selection.line && !areaMapAllowed) fitHoleGeometry(features);
+  else if (focus && exact.length) {
     const bounds = L.geoJSON({ type: 'FeatureCollection', features: exact }).getBounds();
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 17, animate: true });
   } else if (focus && !state.gps && state.courseData.center) map.flyTo(state.courseData.center, 15, { duration: 1 });
   const holes = exact.filter(feature => feature.properties.tags.golf === 'hole').length;
-  $('course-status').textContent = `${state.courseData.features.length} geografiska banformer · ` + (holes ? `${holes} identifierade hållinjer på ${state.course === 'links' ? 'Links' : 'Lakes'}. GPS använder samma skala som banvyn.` : 'Hålpositioner för Links saknas i källan; placera boll och mål på banvyn.');
+  $('course-status').textContent = `${state.courseData.features.length} geografiska banformer · ` + (holes ? state.course === 'links' ? 'Links · ungefärlig hålindelning från banguide och OSM. GPS och kartformer använder geografiska koordinater.' : `${holes} identifierade hållinjer på Lakes. GPS använder samma skala som banvyn.` : 'Hålpositioner för Links saknas i källan; placera boll och mål på banvyn.');
 }
 function showHoleInfo() {
   const course = nationalMetadata?.courses.find(course => course.id === state.course);
@@ -326,14 +328,26 @@ function selectCourseMetadata() {
   $('setup-tee').value = $('tee').value;
   showHoleInfo();
 }
+function fitHoleGeometry(features) {
+  if (!map || !features.length) return;
+  map.invalidateSize();
+  const points=features.flatMap(f=>f.geometry.type==='Polygon'?f.geometry.coordinates.flat():f.geometry.coordinates)
+    .map(p=>map.project(L.latLng(p[1],p[0]),0));
+  const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const size=map.getSize(),padding=14;
+  const scale=Math.min(Math.max(1,size.x-2*padding)/Math.max(1e-12,maxX-minX),Math.max(1,size.y-2*padding)/Math.max(1e-12,maxY-minY));
+  const snap=map.options.zoomSnap || .05;
+  const zoom=Math.min(20,Math.floor(map.getScaleZoom(scale,0)/snap)*snap);
+  const center=map.unproject(L.point((minX+maxX)/2,(minY+maxY)/2),0);
+  map.setView(center,zoom,{animate:false});
+}
 function focusHole() {
   showHoleInfo(); drawCourse(false);
   const features = state.courseData?.features.filter(feature => feature.properties.course === state.course && feature.properties.tags.golf === 'hole' && feature.properties.tags.ref === $('hole').value) || [];
   if (map && features.length) {
     const selection = window.HoleView.select(state.courseData.features,state.course,$('hole').value);
-    const bounds = L.geoJSON({ type:'FeatureCollection',features:selection.features }).getBounds();
-    map.invalidateSize();
-    if (bounds.isValid()) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 18, animate: false });
+    fitHoleGeometry(selection.features);
   } else $('course-status').textContent = 'Hållinjen för detta Links-hål saknas. Banguide och verkliga banformer finns; placera boll och mål manuellt.';
   // Hole length is not the current shot's carry. Never replace shot distance or guess a flag.
 }
