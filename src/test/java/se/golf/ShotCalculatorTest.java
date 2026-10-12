@@ -26,7 +26,7 @@ class ShotCalculatorTest {
     @Test void pureCrosswindDoesNotInventCarryOrAimCorrection() {
         var result = ShotCalculator.calculate(shot(0, 5, 90, 0, "fairway", false));
         assertEquals(160, result.playsLike()); assertEquals(5, result.crosswind());
-        assertTrue(result.warnings().stream().anyMatch(s -> s.contains("Sidvind")));
+        assertTrue(result.warnings().stream().anyMatch(s -> s.contains("Sidovind")));
     }
     @Test void elevationAndLieAffectCarryInExpectedDirection() {
         assertTrue(ShotCalculator.calculate(shot(0, 0, 0, 10, "fairway", false)).playsLike() > 160);

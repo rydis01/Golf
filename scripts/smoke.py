@@ -53,6 +53,8 @@ with sync_playwright() as p:
     assert page.title() == 'Golf Caddie'
     page.wait_for_function("document.querySelector('#hole').options.length === 18")
     assert 'par 4' in page.locator('#hole-info').inner_text()
+    page.locator('#start-round').click()
+    page.locator('#try-demo').click()
     page.locator('#calculate').click()
     page.locator('#result').wait_for(state='visible')
     assert int(page.locator('#plays-like').inner_text()) > 160
@@ -66,6 +68,7 @@ with sync_playwright() as p:
     page.locator('#calculate').click()
     page.locator('#result').wait_for(state='visible')
     assert int(page.locator('#plays-like').inner_text()) > 160
+    page.locator('#reset-map').click()
     page.locator('[data-position-mode="gps"]').click()
     page.wait_for_function("document.querySelector('#gps-status').textContent.includes('GPS aktiv')")
     assert '10 m' in page.locator('#gps-status').inner_text()
@@ -75,11 +78,14 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelectorAll('.point-marker').length === 2")
     assert not page.locator('#use-manual').is_checked()
     assert page.locator('#distance').is_disabled()
-    page.locator('[data-course="lakes"]').click()
-    assert page.locator('[data-course="lakes"]').get_attribute('aria-pressed') == 'true'
     page.locator('#stop-gps').click()
     assert page.locator('#stop-gps').is_hidden()
     assert page.locator('.gps-marker').count() == 0
+    page.locator('#change-course').click()
+    page.locator('[data-course="lakes"]').click()
+    page.locator('#start-round').click()
+    page.locator('#try-demo').click()
+    assert page.locator('[data-course="lakes"]').get_attribute('aria-pressed') == 'true'
     print('PASS: browser shot calculation, stale result handling, GPS test position, map selection and course switch')
 
     # Explicit fixture verifies weather rendering only; it is not a live-provider test.

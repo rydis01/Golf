@@ -1,11 +1,12 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const isNative = () => Boolean(window.Capacitor?.isNativePlatform());
-const state = { ball: null, target: null, lie: 'fairway', course: 'links', positionMode: 'manual', placePoint: 'ball', watchId: null, gps: null, weather: null, courseData: null, layer: null, apiBase: '' };
+const state = { ball: null, target: null, flag: null, safetyCandidate: null, safeLanding: null, lie: 'fairway', course: 'links', roundStarted: false, rangefinderBall: null, gpsAccuracy: 0, positionMode: 'manual', placePoint: 'ball', watchId: null, gps: null, weather: null, courseData: null, layer: null, apiBase: '' };
 try { state.apiBase = localStorage.getItem('golf-api-base') ?? window.GOLF_CONFIG?.apiBase ?? ''; } catch { state.apiBase = window.GOLF_CONFIG?.apiBase ?? ''; }
 if (window.GOLF_LOCAL_ONLY) { state.apiBase = ''; $('settings-open').hidden = true; }
 let map, ballMarker, targetMarker, shotLine, gpsMarker, gpsCircle, courseLayer, courseRequest = 0, weatherRequest = 0, elevationRequest = 0, calculationRequest = 0;
 let toastTimer;
+let aimMarker, aimLine, suggestionMarker, landingMarker;
 let nationalMetadata;
 const f = n => new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 1 }).format(n);
 const meters = n => Math.round(n);
@@ -24,6 +25,9 @@ function invalidate() {
   const heading = document.createElement('strong'); heading.textContent = 'En caddie, inte en garanti.';
   const p = document.createElement('p'); p.textContent = 'Modellen är en uppskattning. Räkna alltid med variation i bollflykt och vind.';
   $('warnings').append(heading, p);
+  [aimMarker,aimLine,suggestionMarker].forEach(layer=>layer&&map?.removeLayer(layer));
+  aimMarker=aimLine=suggestionMarker=null; state.safetyCandidate=null;
+  $('choose-safe-landing').hidden=true;
 }
 async function api(path, options = {}) {
   if (window.GOLF_PROTOTYPE && !state.apiBase) return window.GolfPrototype.api(path, options);
@@ -51,13 +55,16 @@ function geoBearing(a, b) {
 }
 function markerIcon(target = false) { return L.divIcon({ className: '', html: `<span class="point-marker ${target ? 'target' : ''}">${target ? '⚑' : '●'}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] }); }
 function setBall(p) {
+  if (state.rangefinderBall && geoDistance(state.rangefinderBall, p) > (state.positionMode === 'gps' ? Math.max(5, state.gpsAccuracy) : 1)) clearRangefinder('Bollens plats har ändrats. Mät avståndet till flaggan igen.');
   state.ball = p;
   if (!ballMarker) { ballMarker = L.marker(ll(p), { icon: markerIcon(), draggable: true }).addTo(map); ballMarker.on('dragend', () => { setPositionMode('manual', false).catch(e => notify(e.message)); setBall(point(ballMarker.getLatLng())); }); }
   else ballMarker.setLatLng(ll(p));
   pointsChanged();
 }
 function setTarget(p) {
-  state.target = p;
+  if(state.rangefinderBall && state.flag && geoDistance(state.flag,p)>1) clearRangefinder('Flaggans målpunkt har ändrats. Kontrollera kikaravståndet igen.');
+  state.target = state.flag = p; state.safeLanding=null;
+  if(landingMarker) map.removeLayer(landingMarker); landingMarker=null;
   if (!targetMarker) { targetMarker = L.marker(ll(p), { icon: markerIcon(true), draggable: true }).addTo(map); targetMarker.on('dragend', () => setTarget(point(targetMarker.getLatLng()))); }
   else targetMarker.setLatLng(ll(p));
   pointsChanged();
@@ -78,7 +85,59 @@ function pointsChanged() {
   syncManual();
   updateWeatherStatus();
 }
-function syncManual() { $('distance').disabled = !$('use-manual').checked; $('bearing').disabled = !$('use-manual').checked; }
+function syncManual() {
+  const laser = $('use-rangefinder').checked;
+  $('rangefinder-fields').hidden = !laser;
+  $('use-manual').disabled = laser;
+  $('distance').disabled = laser || !$('use-manual').checked;
+  $('bearing').disabled = laser ? Boolean(state.ball && state.target) : !$('use-manual').checked;
+  $('rangefinder-help').textContent = $('rangefinder-type').value === 'slope' ? 'Kikarens slope-värde innehåller höjdjusteringen. Vi justerar därefter för vind, luft och bolläge och räknar inte höjden en gång till.' : 'Avståndet används till den flagga du har mätt. Markera riktningen på kartan eller ange slagriktning nedan. Flyttar du dig behöver du mäta igen.';
+}
+function clearRangefinder(message = '') {
+  $('rangefinder-distance').value = ''; $('use-rangefinder').checked = false;
+  state.rangefinderBall = null; $('rangefinder-status').textContent = message;
+  syncManual(); invalidate();
+}
+function clearShot() {
+  [ballMarker, targetMarker, shotLine,landingMarker].forEach(layer => layer && map?.removeLayer(layer));
+  ballMarker = targetMarker = shotLine = landingMarker = null; state.ball = state.target = state.flag = state.safeLanding = null;
+  clearRangefinder(); $('rangefinder-type').value = 'raw';
+  $('distance').value = ''; $('bearing').value = ''; $('use-manual').checked = true;
+  $('elevation').value = 0; $('elevation-status').textContent = 'Manuellt värde för detta hål. Plus = uppför, minus = nedför.';
+  $('map-distance').textContent = 'Välj boll och mål';
+  state.lie = 'fairway';
+  document.querySelectorAll('[data-lie]').forEach(button => { const selected = button.dataset.lie === 'fairway'; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
+  $('lie-help').textContent = 'Ren kontakt från kortklippt gräs.';
+  $('trajectory').value = 'normal'; $('wet').checked = false; $('flight-time').value='';
+  weatherRequest++; elevationRequest++; syncManual(); invalidate(); choosePoint(state.positionMode === 'gps' ? 'target' : 'ball');
+  if (state.positionMode === 'gps' && state.gps) setBall(state.gps);
+}
+function saveRound() {
+  if (!state.roundStarted) return;
+  try { localStorage.setItem('golf-round', JSON.stringify({ course: state.course, hole: Number($('hole').value), tee: $('tee').value })); } catch { /* Storage is optional. */ }
+}
+function savedRound() {
+  try {
+    const round = JSON.parse(localStorage.getItem('golf-round'));
+    const course = nationalMetadata?.courses.find(course => course.id === round?.course);
+    return course && Number.isInteger(round.hole) && round.hole >= 1 && round.hole <= 18 && Object.hasOwn(course.holes[0].tees, round.tee) ? round : null;
+  } catch { return null; }
+}
+function startRound(resume = false) {
+  const saved = resume ? savedRound() : null;
+  if (saved) { state.course = saved.course; selectCourseMetadata(); $('tee').value = saved.tee; $('hole').value = saved.hole; }
+  else { $('tee').value = $('setup-tee').value; $('hole').value = '1'; }
+  state.roundStarted = true;
+  $('round-setup').hidden = true; $('round-header').hidden = false; $('round-workspace').hidden = false;
+  map?.invalidateSize();
+  clearShot(); showHoleInfo(); drawCourse(false); focusHole();
+  requestAnimationFrame(() => map?.invalidateSize());
+}
+function changeHole(number) {
+  if (!Number.isInteger(number) || number < 1 || number > 18) return;
+  $('hole').value = String(number); clearShot(); focusHole();
+  $('round-header').scrollIntoView({ block: 'start', behavior: 'instant' });
+}
 function setupMap() {
   if (!window.L) { $('map-error').hidden = false; return; }
   // Verified National center from OSM way 34563422 / Nominatim.
@@ -92,7 +151,7 @@ function setupMap() {
 function choosePoint(which) {
   state.placePoint = which;
   document.querySelectorAll('[data-place-point]').forEach(button => { const selected = button.dataset.placePoint === which; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
-  $('map-hint').textContent = which === 'ball' ? 'Tryck där du vill placera bollen' : 'Tryck där du vill att bollen ska landa';
+  $('map-hint').textContent = which === 'ball' ? 'Tryck där du vill placera bollen' : 'Tryck där dagens flagga står';
 }
 async function setPositionMode(mode, focus = true) {
   const previousMode = state.positionMode;
@@ -140,15 +199,20 @@ function changeMap(satellite) {
 }
 const courseStyle = feature => {
   const tags = feature.properties.tags, type = tags.golf;
-  const colors = { fairway: '#b6d184', green: '#8fb855', bunker: '#eee0a6', rough: '#c9d7a6', tee: '#a0ba77', water_hazard: '#9dcbd2', lateral_water_hazard: '#9dcbd2' };
+  const colors = { fairway: '#bdca73', green: '#b8d35e', bunker: '#fff9e6', rough: '#c6bd78', tee: '#d8df95', water_hazard: '#8bb8b5', lateral_water_hazard: '#8bb8b5' };
   if (type === 'hole') return { color: '#466742', weight: 1.5, dashArray: '4 6', opacity: 0.5 };
-  if (tags.leisure === 'golf_course') return { color: '#446e3b', weight: 2, fillOpacity: 0.06, dashArray: '5 6' };
-  return { color: type === 'bunker' ? '#d6c78f' : tags.natural === 'water' ? '#76afb9' : '#8da56c', weight: 1, fillColor: tags.natural === 'water' ? '#9dcbd2' : colors[type] || '#d0dbb6', fillOpacity: 0.85 };
+  const satellite = $('satellite').classList.contains('selected');
+  if (tags.leisure === 'golf_course') return { color: '#8b9060', weight: 1, fillColor: '#c6c480', fillOpacity: satellite ? 0 : .45 };
+  const forest = tags.natural === 'wood' || tags.landuse === 'forest';
+  return { color: type === 'bunker' ? '#c9bb8d' : tags.natural === 'water' ? '#699e9e' : forest ? '#60784d' : '#8b9c5b', weight: 1, fillColor: tags.natural === 'water' ? '#8bb8b5' : forest ? '#748650' : colors[type] || '#c6c480', fillOpacity: satellite ? .12 : .95 };
 };
 function drawCourse(focus = true) {
   if (!map || !state.courseData) return;
   if (courseLayer) map.removeLayer(courseLayer);
-  const features = state.courseData.features.filter(feature => feature.properties.course === 'unassigned' || feature.properties.course === state.course);
+  const features = state.courseData.features.filter(feature => feature.properties.course === 'unassigned' || feature.properties.course === state.course).sort((a,b) => {
+    const priority = f => ({ golf_course:0, rough:1, fairway:3, tee:4, green:5, bunker:6, hole:7 }[f.properties.tags.golf || f.properties.tags.leisure] ?? 2);
+    return priority(a)-priority(b);
+  });
   courseLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
     style: courseStyle,
     interactive: false,
@@ -164,7 +228,7 @@ function drawCourse(focus = true) {
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 17, animate: true });
   } else if (focus && !state.gps && state.courseData.center) map.flyTo(state.courseData.center, 15, { duration: 1 });
   const holes = exact.filter(feature => feature.properties.tags.golf === 'hole').length;
-  $('course-status').textContent = exact.length ? `${state.course === 'links' ? 'Links' : 'Lakes'} · ${holes} namngivna hållinjer i OSM · kontrollera mot banans skyltar` : 'National-data från OSM · Links/Lakes-tillhörighet saknas. Banvalet flyttar inte till obekräftade hål.';
+  $('course-status').textContent = `${state.courseData.features.length} geografiska banformer · ` + (holes ? `${holes} identifierade hållinjer på ${state.course === 'links' ? 'Links' : 'Lakes'}. GPS använder samma skala som banvyn.` : 'Hålpositioner för Links saknas i källan; placera boll och mål på banvyn.');
 }
 function showHoleInfo() {
   const course = nationalMetadata?.courses.find(course => course.id === state.course);
@@ -172,6 +236,22 @@ function showHoleInfo() {
   const hole = course.holes.find(hole => hole.number === Number($('hole').value)) || course.holes[0];
   $('hole-info').textContent = `Hål ${hole.number} · par ${hole.par} · HCP ${hole.hcp} · tee ${$('tee').value}: ${hole.tees[$('tee').value]} m`;
   $('official-guide').href = course.source;
+  $('round-course').textContent = course.name;
+  $('hole-title').replaceChildren(document.createTextNode('Hål ' + hole.number + ' '), Object.assign(document.createElement('small'), { textContent: '/ 18' }));
+  $('round-hole-info').textContent = `Par ${hole.par} · HCP ${hole.hcp} · tee ${$('tee').value}: ${hole.tees[$('tee').value]} m`;
+  $('hole-progress').textContent = `${hole.number} / 18`;
+  $('previous-hole').disabled = hole.number === 1; $('next-hole').disabled = hole.number === 18;
+  $('next-hole').textContent = hole.number === 18 ? 'Sista hålet' : 'Nästa hål →';
+  $('guide-title').textContent = `${course.name} · hål ${hole.number}`;
+  const guide = hole.guide;
+  $('hole-guide').hidden = !guide;
+  if (guide) {
+    const assetBase = window.GOLF_ASSET_BASE;
+    const source = window.GOLF_LOCAL_ONLY ? guide.localPath : assetBase ? assetBase + guide.localPath : window.GOLF_PROTOTYPE ? guide.sourceUrl : guide.localPath;
+    $('hole-guide').src = source; $('hole-guide').alt = `${course.name}, hål ${hole.number}, officiell banguide`;
+    $('guide-source').href = guide.sourceUrl;
+  }
+  saveRound();
 }
 function selectCourseMetadata() {
   const course = nationalMetadata?.courses.find(course => course.id === state.course);
@@ -182,6 +262,8 @@ function selectCourseMetadata() {
   if (previousHole) $('hole').value = previousHole;
   const tees = Object.keys(course.holes[0].tees);
   $('tee').value = tees.includes(previousTee) ? previousTee : state.course === 'links' ? '58' : '59';
+  $('setup-tee').replaceChildren(...Array.from($('tee').options, option => option.cloneNode(true)));
+  $('setup-tee').value = $('tee').value;
   showHoleInfo();
 }
 function focusHole() {
@@ -190,7 +272,7 @@ function focusHole() {
   if (map && features.length) {
     const bounds = L.geoJSON({ type: 'FeatureCollection', features }).getBounds();
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 18, animate: true });
-  } else notify('Par och teeavstånd finns från banans webbplats. Verifierad kartposition för detta hål saknas ännu; välj boll och mål manuellt.');
+  } else $('course-status').textContent = 'Hållinjen för detta Links-hål saknas. Banguide och verkliga banformer finns; placera boll och mål manuellt.';
   // Hole length is not the current shot's carry. Never replace shot distance or guess a flag.
 }
 async function loadMetadata() {
@@ -202,14 +284,17 @@ async function loadMetadata() {
       nationalMetadata = await response.json();
     }
     selectCourseMetadata();
+    $('start-round').disabled = false;
+    const saved = savedRound();
+    if (saved) { $('resume-round').hidden = false; $('resume-round').textContent = `Fortsätt ${saved.course === 'links' ? 'Links' : 'Lakes'} · hål ${saved.hole}`; }
   } catch { $('hole-info').textContent = 'Håldata kunde inte läsas. Kartans boll och mål kan fortfarande väljas.'; }
   try {
-    if (window.GOLF_BUNDLED_DATA) state.courseData = window.GOLF_BUNDLED_DATA.boundary;
+    if (window.GOLF_BUNDLED_DATA) state.courseData = window.GOLF_BUNDLED_DATA.geometry || window.GOLF_BUNDLED_DATA.boundary;
     else {
-      const response = await fetch('data/national-boundary.json');
+      const response = await fetch('data/national-geometry.json');
       if (response.ok) state.courseData = await response.json();
     }
-    if (state.courseData) drawCourse(false);
+    if (state.courseData) { drawCourse(false); if(state.roundStarted) focusHole(); }
   } catch { /* The base map and manual inputs remain usable without the bundled boundary. */ }
 }
 async function fetchCourse() {
@@ -294,7 +379,7 @@ async function fetchElevation() {
 function geoPlugin() { return window.Capacitor.registerPlugin('Geolocation'); }
 function updatePosition(position) {
   const p = { lat: position.coords.latitude, lon: position.coords.longitude }, accuracy = position.coords.accuracy;
-  const first = !state.gps; state.gps = p;
+  const first = !state.gps; state.gps = p; state.gpsAccuracy = accuracy;
   $('gps-status').textContent = `GPS aktiv · noggrannhet cirka ±${meters(accuracy)} m` + (accuracy > 20 ? ' · placera bollen manuellt för bättre precision' : '');
   if (!map) return;
   if (!gpsMarker) {
@@ -331,36 +416,88 @@ async function stopGps() {
   if (gpsMarker) map.removeLayer(gpsMarker); if (gpsCircle) map.removeLayer(gpsCircle); gpsMarker = gpsCircle = null;
   $('stop-gps').hidden = true; $('location').textContent = '⌖ Min position'; $('gps-status').textContent = 'GPS avstängd. Bollens valda position behålls.';
 }
+function destination(p,bearing,distance) {
+  const a=distance/6371000,b=bearing*Math.PI/180,lat=p.lat*Math.PI/180,lon=p.lon*Math.PI/180;
+  const nextLat=Math.asin(Math.sin(lat)*Math.cos(a)+Math.cos(lat)*Math.sin(a)*Math.cos(b));
+  const nextLon=lon+Math.atan2(Math.sin(b)*Math.sin(a)*Math.cos(lat),Math.cos(a)-Math.sin(lat)*Math.sin(nextLat));
+  return {lat:nextLat*180/Math.PI,lon:((nextLon*180/Math.PI+540)%360)-180};
+}
+function showLateralAndLanding(result) {
+  const drift=Math.abs(result.lateralDrift),offset=Math.abs(result.aimOffset);
+  $('lateral-drift').textContent=drift<.5?'Ingen tydlig riktad sidodrift':`Bollen uppskattas driva ${f(drift)} m åt ${result.lateralDrift>0?'höger':'vänster'}`;
+  $('aim-advice').textContent=offset<.5?'Ingen riktad vindkompensation i sidled.':`Sikta cirka ${f(offset)} m ${result.aimOffset>0?'höger':'vänster'} om ${state.safeLanding?'landningsytan':'flaggan'} för ett rakt slag.`;
+  const margin=Math.max(result.lateralHigh-result.lateralDrift,result.lateralDrift-result.lateralLow);
+  $('flight-info').textContent=`${result.flightTimeMeasured?'Angiven':'Uppskattad'} flygtid ${f(result.flightTime)} s · sidomarginal cirka ±${f(margin)} m. Modellmarginal, ingen statistisk garanti.`;
+  [aimMarker,aimLine,suggestionMarker].forEach(layer=>layer&&map?.removeLayer(layer));aimMarker=aimLine=suggestionMarker=null;
+  if(map&&state.ball&&state.target) {
+    const aim=destination(state.target,result.bearing+(result.aimOffset>=0?90:-90),offset);
+    aimMarker=L.circleMarker(ll(aim),{radius:7,color:'#3188bd',weight:2,fillColor:'#d9f0ff',fillOpacity:1}).addTo(map).bindTooltip('Sikte med sidovind',{direction:'top'});
+    aimLine=L.polyline([ll(state.ball),ll(aim)],{color:'#3188bd',weight:2,dashArray:'4 7',interactive:false}).addTo(map);
+  }
+  $('choose-safe-landing').hidden=true;state.safetyCandidate=null;
+  if(!state.flag||!state.courseData) {$('landing-message').textContent='Sätt dagens flagga på den geografiska banvyn för att bedöma landningsytan.';return;}
+  const advice=window.LandingAdvisor.analyze(state.flag,state.courseData.features,result,state.positionMode==='gps'?state.gpsAccuracy:0);
+  let message=advice.message;
+  if(advice.candidate) {
+    state.safetyCandidate=advice.candidate;
+    message+=` En rymligare yta finns cirka ${Math.round(advice.candidate.flagOffset)} m från flaggan.`;
+    if(!advice.candidate.fullMargin)message+=' Hela modellmarginalen ryms fortfarande inte där; ett upplägg kan vara ett bättre val.';
+    if(map)suggestionMarker=L.circleMarker(ll(advice.candidate),{radius:9,color:'#658f49',weight:2,fillColor:'#d8ee94',fillOpacity:.8}).addTo(map).bindTooltip('Rymligare landningsyta',{direction:'top'});
+    $('choose-safe-landing').hidden=false;
+  }
+  $('landing-message').textContent=message;
+}
+$('choose-safe-landing').addEventListener('click',()=>{
+  const point=state.safetyCandidate;if(!point)return;
+  state.safeLanding=state.target={lat:point.lat,lon:point.lon};
+  if(landingMarker)map.removeLayer(landingMarker);
+  if(map)landingMarker=L.circleMarker(ll(state.target),{radius:7,color:'#658f49',fillColor:'#d8ee94',fillOpacity:1}).addTo(map).bindTooltip('Vald landningsyta',{direction:'top'});
+  pointsChanged();calculate();
+});
 async function calculate() {
   $('calculation-error').hidden = true;
-  let payload;
+  let payload, shotContext;
   try {
     const manual = $('use-manual').checked;
-    if (!manual && (!state.ball || !state.target)) throw new Error('Välj boll och mål på kartan eller använd manuellt avstånd.');
+    const laser = $('use-rangefinder').checked, slope = laser && $('rangefinder-type').value === 'slope';
+    if (!laser && !manual && (!state.ball || !state.target)) throw new Error('Välj boll och mål på kartan eller använd manuellt avstånd.');
     if (state.weather && Date.now() - state.weather.fetchedAt > 30 * 60000) throw new Error('Vädret är äldre än 30 minuter. Hämta nytt väder eller justera till manuella värden.');
     if (state.weather && state.ball && geoDistance(state.ball, state.weather.point) > 500) throw new Error('Bollens position har ändrats. Hämta nytt väder för den nya platsen eller använd manuella vädervärden.');
-    payload = { ball: state.ball, target: state.target, distance: manual ? num('distance') : null, bearing: manual ? num('bearing') : null, elevationChange: num('elevation'), lie: state.lie, trajectory: $('trajectory').value, wetBall: $('wet').checked,
-      weather: { temperature: num('temperature'), humidity: num('humidity'), pressure: num('pressure'), windSpeed: num('wind'), windFrom: num('wind-from'), gusts: num('gusts') } };
+    const measured = laser ? num('rangefinder-distance') : null;
+    const elevation = slope ? 0 : num('elevation');
+    if (laser && !slope && Math.abs(elevation) >= measured) throw new Error('Höjdskillnaden måste vara mindre än kikarens uppmätta avstånd.');
+    const mapOffset = state.safeLanding && state.ball && state.flag ? geoDistance(state.ball,state.target)-geoDistance(state.ball,state.flag) : 0;
+    const distance = laser ? (slope ? measured : Math.sqrt(measured * measured - elevation * elevation))+mapOffset : manual ? num('distance') : null;
+    const bearing = laser ? state.ball && state.target ? geoBearing(state.ball, state.target) : num('bearing') : manual ? num('bearing') : null;
+    shotContext = { laser, slope, measured, mapOffset, safeLanding:Boolean(state.safeLanding), course: nationalMetadata.courses.find(course => course.id === state.course).name, hole: Number($('hole').value) };
+    payload = { ball: state.ball, target: state.target, distance, bearing, elevationChange: elevation, lie: state.lie, trajectory: $('trajectory').value, wetBall: $('wet').checked,
+      weather: { temperature: num('temperature'), humidity: num('humidity'), pressure: num('pressure'), windSpeed: num('wind'), windFrom: num('wind-from'), gusts: num('gusts') }, flightTime:$('flight-time').value.trim()===''?null:num('flight-time') };
   } catch (e) { $('calculation-error').textContent = e.message; $('calculation-error').hidden = false; return; }
   const id = ++calculationRequest; $('calculate').disabled = true;
   try {
     const result = await api('/api/shot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (id !== calculationRequest) return;
-    $('plays-like').textContent = meters(result.playsLike); $('actual-distance').textContent = meters(result.distance);
+    $('plays-like').textContent = meters(result.playsLike); $('actual-distance').textContent = meters(shotContext.laser ? shotContext.measured : result.distance);
+    $('result-target').textContent = shotContext.safeLanding ? 'Spela mot vald landningsyta som' : 'Spela mot flaggan som';
+    $('distance-source').textContent = shotContext.laser ? shotContext.slope ? ' m från kikaren · slope ingår' : ' m till flaggan · uppmätt med kikare' : ' m till valt mål';
+    $('result-context').textContent = `${shotContext.course} · hål ${shotContext.hole}`+(shotContext.safeLanding ? ` · landningsytan uppskattas ${shotContext.mapOffset>=0?'+':''}${f(shotContext.mapOffset)} m i längd från ${shotContext.laser?'den mätta ':''}flaggan`:'');
     const difference = meters(result.playsLike - result.distance);
     $('difference').textContent = (difference > 0 ? '+' : '') + difference + ' m justering';
     $('result-range').textContent = `${meters(result.rangeLow)}–${meters(result.rangeHigh)} m`;
     $('adjustments').replaceChildren();
     result.adjustments.forEach(adjustment => {
       const row = document.createElement('div'); row.className = 'adjustment';
-      const label = document.createElement('button'); label.textContent = adjustment.label + ' ⓘ'; label.addEventListener('click', () => notify(adjustment.explanation));
+      const label = document.createElement('button'); label.textContent = adjustment.label + (shotContext.slope && adjustment.label === 'Höjd' ? ' (ingår)' : '') + ' ⓘ'; label.addEventListener('click', () => notify(shotContext.slope && adjustment.label === 'Höjd' ? 'Höjdjusteringen ingår i kikarens slope-avstånd och läggs inte på igen.' : adjustment.explanation));
       const value = document.createElement('strong'); value.textContent = (adjustment.meters > 0 ? '+' : '') + f(adjustment.meters) + ' m';
       row.append(label, value); $('adjustments').append(row);
     });
     $('crosswind').textContent = Math.abs(result.crosswind) < .5 ? 'Ingen betydande sidvind i slagriktningen.' : `Sidvind ${f(Math.abs(result.crosswind))} m/s från ${result.crosswind > 0 ? 'höger' : 'vänster'} · anpassa sikte efter bollbana.`;
+    showLateralAndLanding(result);
     const list = document.createElement('ul');
     result.warnings.forEach(warning => { const item = document.createElement('li'); item.textContent = warning; list.append(item); });
     if (!state.weather) { const item = document.createElement('li'); item.textContent = 'Beräknat från manuella vädervärden, inte hämtat lokalt väder.'; list.append(item); }
+    if (shotContext.laser) { const item = document.createElement('li'); item.textContent = shotContext.slope ? 'Utgår från kikarens höjdkorrigerade spelavstånd. Vind, luft och bolläge justeras separat.' : 'Utgår från ditt uppmätta avstånd till flaggan. Riktning, höjd och slagets variation behöver fortfarande stämma.'; list.append(item); }
+    if(shotContext.safeLanding) {const item=document.createElement('li');item.textContent='Landningsytans avstånd är uppskattat från kartan, med kikaravståndet som referens om det används. Höjden antas vara samma som vid flaggan; kontrollera den.';list.append(item);}
     $('warnings').replaceChildren(list); $('result-empty').hidden = true; $('result').hidden = false;
     if (window.innerWidth < 651) $('result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
   } catch (e) { if (id === calculationRequest) { $('calculation-error').textContent = e.message; $('calculation-error').hidden = false; } }
@@ -368,9 +505,7 @@ async function calculate() {
 }
 $('satellite').addEventListener('click', () => changeMap(true)); $('street').addEventListener('click', () => changeMap(false));
 $('reset-map').addEventListener('click', () => {
-  [ballMarker, targetMarker, shotLine].forEach(layer => layer && map.removeLayer(layer)); ballMarker = targetMarker = shotLine = null;
-  state.ball = state.target = null; $('gps-ball').checked = false; $('use-manual').checked = true; $('map-distance').textContent = 'Välj två punkter'; $('map-hint').textContent = '1. Tryck där bollen ligger · 2. Välj ditt mål';
-  weatherRequest++; elevationRequest++; choosePoint(state.positionMode === 'gps' ? 'target' : 'ball'); syncManual(); invalidate();
+  clearShot();
 });
 document.querySelectorAll('[data-lie]').forEach(button => button.addEventListener('click', () => {
   state.lie = button.dataset.lie;
@@ -380,11 +515,19 @@ document.querySelectorAll('[data-lie]').forEach(button => button.addEventListene
 }));
 document.querySelectorAll('[data-course]').forEach(button => button.addEventListener('click', () => {
   state.course = button.dataset.course;
-  document.querySelectorAll('[data-course]').forEach(b => { b.classList.toggle('selected', b === button); b.setAttribute('aria-pressed', b === button); });
-  selectCourseMetadata(); drawCourse(); invalidate();
+  document.querySelectorAll('[data-course]').forEach(b => { const selected = b.dataset.course === state.course; b.classList.toggle('selected', selected); b.setAttribute('aria-pressed', selected); });
+  $('hole').value = '1'; selectCourseMetadata(); drawCourse(false); invalidate();
 }));
-$('hole').addEventListener('change', focusHole); $('tee').addEventListener('change', showHoleInfo);
-['distance', 'bearing', 'elevation', 'trajectory', 'wet'].forEach(id => $(id).addEventListener('input', () => { if (id === 'elevation') { elevationRequest++; $('elevation-status').textContent = 'Manuellt värde.'; } invalidate(); }));
+$('start-round').addEventListener('click', () => startRound()); $('resume-round').addEventListener('click', () => startRound(true));
+$('setup-tee').addEventListener('change', () => { $('tee').value = $('setup-tee').value; showHoleInfo(); });
+$('previous-hole').addEventListener('click', () => changeHole(Number($('hole').value) - 1));
+$('next-hole').addEventListener('click', () => changeHole(Number($('hole').value) + 1));
+$('change-course').addEventListener('click', async () => { state.roundStarted = false; await setPositionMode('manual', false); clearShot(); $('round-workspace').hidden = true; $('round-header').hidden = true; $('round-setup').hidden = false; $('round-setup').scrollIntoView(); });
+$('hole').addEventListener('change', () => changeHole(Number($('hole').value))); $('tee').addEventListener('change', showHoleInfo);
+$('use-rangefinder').addEventListener('change', () => { syncManual(); invalidate(); });
+$('rangefinder-type').addEventListener('change', () => { syncManual(); invalidate(); });
+$('rangefinder-distance').addEventListener('input', () => { state.rangefinderBall = state.ball ? { ...state.ball } : null; $('rangefinder-status').textContent = 'Mätning för detta inspel. Mät igen om du flyttar dig eller byter mål.'; invalidate(); });
+['distance', 'bearing', 'elevation', 'trajectory', 'wet','flight-time'].forEach(id => $(id).addEventListener('input', () => { if (id === 'elevation') { elevationRequest++; $('elevation-status').textContent = 'Manuellt värde.'; } invalidate(); }));
 ['temperature', 'humidity', 'pressure', 'wind', 'wind-from', 'gusts'].forEach(id => $(id).addEventListener('input', () => { weatherRequest++; state.weather = null; $('forecast').hidden = true; $('weather-title').textContent = 'Dina förhållanden'; updateWeatherStatus(); weatherVisuals(); invalidate(); }));
 $('use-manual').addEventListener('change', () => { syncManual(); invalidate(); });
 $('gps-ball').addEventListener('change', () => { if ($('gps-ball').checked && state.gps) setBall(state.gps); else if ($('gps-ball').checked) notify('Starta GPS med Min position för att följa bollen.'); });

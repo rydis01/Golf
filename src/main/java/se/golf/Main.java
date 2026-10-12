@@ -46,11 +46,13 @@ public final class Main {
                     if (!ex.getRequestMethod().equals("POST")) { respond(ex, 405, Map.of("error", "Använd POST.")); return; }
                     byte[] body = ex.getRequestBody().readNBytes(16_385);
                     if (body.length > 16_384) { respond(ex, 413, Map.of("error", "För stor begäran.")); return; }
-                    respond(ex, 200, ShotCalculator.calculate(JSON.readValue(body, ShotCalculator.Shot.class)));
+                    var request = JSON.readTree(body);
+                    if (request instanceof com.fasterxml.jackson.databind.node.ObjectNode object && !object.has("flightTime")) object.putNull("flightTime");
+                    respond(ex, 200, ShotCalculator.calculate(JSON.treeToValue(request, ShotCalculator.Shot.class)));
                 } else if (!ex.getRequestMethod().equals("GET")) {
                     respond(ex, 405, Map.of("error", "Använd GET."));
                 } else switch (path) {
-                    case "/api/health" -> respond(ex, 200, Map.of("status", "ok", "model", "empirical-v1", "java", Runtime.version().feature()));
+                    case "/api/health" -> respond(ex, 200, Map.of("status", "ok", "model", "wind-v2", "java", Runtime.version().feature()));
                     case "/api/course" -> respond(ex, 200, COURSES.load());
                     case "/api/weather" -> {
                         Map<String, String> q = query(ex);

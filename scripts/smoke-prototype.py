@@ -19,6 +19,7 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto(origin, wait_until='domcontentloaded')
     assert page.locator('#hole option').count() == 18
+    page.locator('#start-round').click()
     page.locator('#try-demo').click()
     page.locator('#calculate').click()
     page.locator('#result').wait_for(state='visible')

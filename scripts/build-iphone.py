@@ -5,6 +5,7 @@ import hashlib
 import json
 import subprocess
 import sys
+from shutil import copy2
 
 root = Path(__file__).resolve().parent.parent
 subprocess.run([sys.executable, str(root/'scripts/export-prototype.py')], cwd=root, check=True)
@@ -37,7 +38,16 @@ manifest = {'id': './', 'name': 'Golf Caddie · The National', 'short_name': 'Go
             'icons': [{'src': f'icons/icon-{size}.png', 'sizes': f'{size}x{size}', 'type': 'image/png', 'purpose': 'any'} for size in [192, 512]]}
 (out/'manifest.webmanifest').write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+'\n')
 assets = ['index.html','install.js','manifest.webmanifest','icons/icon-180.png','icons/icon-192.png','icons/icon-512.png']
+metadata = json.loads((root/'mobile/www/data/national.json').read_text())
+for course in metadata['courses']:
+    for hole in course['holes']:
+        if 'guide' not in hole: continue
+        relative = hole['guide']['localPath']
+        destination = out/relative
+        destination.parent.mkdir(exist_ok=True)
+        copy2(root/'mobile/www'/relative, destination)
+        assets.append(relative)
 digest = hashlib.sha256(b''.join((out/name).read_bytes() for name in assets)).hexdigest()[:16]
 template = (root/'scripts/iphone-service-worker.js').read_text()
-(out/'sw.js').write_text(template.replace('__CACHE_VERSION__', digest))
+(out/'sw.js').write_text(template.replace('__CACHE_VERSION__', digest).replace('__GUIDE_ASSETS__', json.dumps(['./'+name for name in assets if name.startswith('guides/')])) )
 print('iPhone app built:', out, 'cache version', digest)
