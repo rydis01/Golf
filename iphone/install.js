@@ -4,7 +4,7 @@
   const updateButton = document.getElementById('install-update');
   let ready = false;
   function render() {
-    status.textContent = ready ? (navigator.onLine ? 'Sparad på telefonen · kan öppnas utan internet.' : 'Offline · beräkning, manuell placering och banans yttergräns finns på telefonen.')
+    status.textContent = ready ? (navigator.onLine ? 'Sparad på telefonen · kan öppnas utan internet.' : 'Offline · hålkarta och beräkning finns på telefonen.')
       : 'Inte sparad för offline ännu. Behåll internetanslutningen tills appen är klar.';
   }
   if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) document.getElementById('iphone-install').hidden = true;
