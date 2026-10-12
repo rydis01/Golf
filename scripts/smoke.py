@@ -66,11 +66,10 @@ with sync_playwright() as p:
     page.locator('#calculate').click()
     page.locator('#result').wait_for(state='visible')
     assert int(page.locator('#plays-like').inner_text()) > 160
-    page.locator('#location').click()
+    page.locator('[data-position-mode="gps"]').click()
     page.wait_for_function("document.querySelector('#gps-status').textContent.includes('GPS aktiv')")
     assert '10 m' in page.locator('#gps-status').inner_text()
     page.wait_for_timeout(1500)  # Let the 1.2-second GPS camera movement finish before tapping.
-    page.locator('#gps-ball').check()
     page.wait_for_function("document.querySelectorAll('.point-marker').length === 1")
     page.locator('#map').click(position={'x': 220, 'y': 110})
     page.wait_for_function("document.querySelectorAll('.point-marker').length === 2")

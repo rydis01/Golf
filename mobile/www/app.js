@@ -1,7 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const isNative = () => Boolean(window.Capacitor?.isNativePlatform());
-const state = { ball: null, target: null, lie: 'fairway', course: 'links', watchId: null, gps: null, weather: null, courseData: null, layer: null, apiBase: '' };
+const state = { ball: null, target: null, lie: 'fairway', course: 'links', positionMode: 'manual', placePoint: 'ball', watchId: null, gps: null, weather: null, courseData: null, layer: null, apiBase: '' };
 try { state.apiBase = localStorage.getItem('golf-api-base') ?? window.GOLF_CONFIG?.apiBase ?? ''; } catch { state.apiBase = window.GOLF_CONFIG?.apiBase ?? ''; }
 let map, ballMarker, targetMarker, shotLine, gpsMarker, gpsCircle, courseLayer, courseRequest = 0, weatherRequest = 0, elevationRequest = 0, calculationRequest = 0;
 let toastTimer;
@@ -25,6 +25,7 @@ function invalidate() {
   $('warnings').append(heading, p);
 }
 async function api(path, options = {}) {
+  if (window.GOLF_PROTOTYPE && !state.apiBase) return window.GolfPrototype.api(path, options);
   if (isNative() && !state.apiBase) throw new Error('Ange Java-serverns HTTPS-adress under kugghjulet för att ansluta mobilappen.');
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), path.startsWith('/api/course') ? 65000 : 18000);
   try {
@@ -50,7 +51,7 @@ function geoBearing(a, b) {
 function markerIcon(target = false) { return L.divIcon({ className: '', html: `<span class="point-marker ${target ? 'target' : ''}">${target ? '⚑' : '●'}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] }); }
 function setBall(p) {
   state.ball = p;
-  if (!ballMarker) { ballMarker = L.marker(ll(p), { icon: markerIcon(), draggable: true }).addTo(map); ballMarker.on('dragend', () => { $('gps-ball').checked = false; setBall(point(ballMarker.getLatLng())); }); }
+  if (!ballMarker) { ballMarker = L.marker(ll(p), { icon: markerIcon(), draggable: true }).addTo(map); ballMarker.on('dragend', () => { setPositionMode('manual', false).catch(e => notify(e.message)); setBall(point(ballMarker.getLatLng())); }); }
   else ballMarker.setLatLng(ll(p));
   pointsChanged();
 }
@@ -82,7 +83,45 @@ function setupMap() {
   // Verified National center from OSM way 34563422 / Nominatim.
   map = L.map('map', { zoomControl: true }).setView([55.5690857, 13.1887799], 15);
   changeMap(false);
-  map.on('click', e => { if (!state.ball) setBall(point(e.latlng)); else setTarget(point(e.latlng)); });
+  map.on('click', e => {
+    if (state.positionMode === 'manual' && state.placePoint === 'ball') { setBall(point(e.latlng)); choosePoint('target'); }
+    else setTarget(point(e.latlng));
+  });
+}
+function choosePoint(which) {
+  state.placePoint = which;
+  document.querySelectorAll('[data-place-point]').forEach(button => { const selected = button.dataset.placePoint === which; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
+  $('map-hint').textContent = which === 'ball' ? 'Tryck där du vill placera bollen' : 'Tryck där du vill att bollen ska landa';
+}
+async function setPositionMode(mode, focus = true) {
+  const previousMode = state.positionMode;
+  state.positionMode = mode;
+  document.querySelectorAll('[data-position-mode]').forEach(button => { const selected = button.dataset.positionMode === mode; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
+  const gps = mode === 'gps';
+  document.querySelector('.point-placement').hidden = gps;
+  $('gps-ball').checked = gps;
+  $('position-help').textContent = gps ? 'Din GPS-position blir bollens plats. Tryck på kartan för att välja mål.' : 'Prova hemifrån: placera bollen och målet på kartan. GPS behövs inte.';
+  if (gps) {
+    choosePoint('target');
+    await startGps();
+    if (state.gps) setBall(state.gps);
+  } else {
+    await stopGps(); choosePoint(previousMode === 'gps' ? 'ball' : state.ball ? 'target' : 'ball');
+    if (focus && map) {
+      if (previousMode === 'gps') map.flyTo([55.5690857, 13.1887799], 15, { duration: .8 });
+      else if (state.ball && state.target) map.fitBounds([ll(state.ball), ll(state.target)], { padding: [45, 45], maxZoom: 18, animate: true });
+      else map.flyTo([55.5690857, 13.1887799], 15, { duration: .8 });
+    }
+  }
+}
+async function tryDemo() {
+  await setPositionMode('manual', false);
+  const ball = { lat: 55.5690857, lon: 13.1887799 };
+  const target = { lat: ball.lat + 160 / 6371000 * 180 / Math.PI, lon: ball.lon };
+  if (map) { setBall(ball); setTarget(target); map.fitBounds([ll(ball), ll(target)], { padding: [55, 55], maxZoom: 18, animate: true }); }
+  else { $('use-manual').checked = true; $('distance').value = 160; $('bearing').value = 0; syncManual(); invalidate(); }
+  choosePoint('target');
+  $('position-help').textContent = 'Exempel: 160 m mellan två valda punkter på området. Inte ett officiellt hål eller en flaggplacering. Dra punkterna eller välj en ny bollplats.';
 }
 function changeMap(satellite) {
   if (!map) return;
@@ -155,13 +194,21 @@ function focusHole() {
 }
 async function loadMetadata() {
   try {
-    const response = await fetch('data/national.json');
-    if (!response.ok) throw new Error();
-    nationalMetadata = await response.json(); selectCourseMetadata();
+    if (window.GOLF_BUNDLED_DATA) nationalMetadata = window.GOLF_BUNDLED_DATA.metadata;
+    else {
+      const response = await fetch('data/national.json');
+      if (!response.ok) throw new Error();
+      nationalMetadata = await response.json();
+    }
+    selectCourseMetadata();
   } catch { $('hole-info').textContent = 'Håldata kunde inte läsas. Kartans boll och mål kan fortfarande väljas.'; }
   try {
-    const response = await fetch('data/national-boundary.json');
-    if (response.ok) { state.courseData = await response.json(); drawCourse(false); }
+    if (window.GOLF_BUNDLED_DATA) state.courseData = window.GOLF_BUNDLED_DATA.boundary;
+    else {
+      const response = await fetch('data/national-boundary.json');
+      if (response.ok) state.courseData = await response.json();
+    }
+    if (state.courseData) drawCourse(false);
   } catch { /* The base map and manual inputs remain usable without the bundled boundary. */ }
 }
 async function fetchCourse() {
@@ -322,7 +369,7 @@ $('satellite').addEventListener('click', () => changeMap(true)); $('street').add
 $('reset-map').addEventListener('click', () => {
   [ballMarker, targetMarker, shotLine].forEach(layer => layer && map.removeLayer(layer)); ballMarker = targetMarker = shotLine = null;
   state.ball = state.target = null; $('gps-ball').checked = false; $('use-manual').checked = true; $('map-distance').textContent = 'Välj två punkter'; $('map-hint').textContent = '1. Tryck där bollen ligger · 2. Välj ditt mål';
-  weatherRequest++; elevationRequest++; syncManual(); invalidate();
+  weatherRequest++; elevationRequest++; choosePoint(state.positionMode === 'gps' ? 'target' : 'ball'); syncManual(); invalidate();
 });
 document.querySelectorAll('[data-lie]').forEach(button => button.addEventListener('click', () => {
   state.lie = button.dataset.lie;
@@ -341,7 +388,10 @@ $('hole').addEventListener('change', focusHole); $('tee').addEventListener('chan
 $('use-manual').addEventListener('change', () => { syncManual(); invalidate(); });
 $('gps-ball').addEventListener('change', () => { if ($('gps-ball').checked && state.gps) setBall(state.gps); else if ($('gps-ball').checked) notify('Starta GPS med Min position för att följa bollen.'); });
 $('calculate').addEventListener('click', calculate); $('fetch-weather').addEventListener('click', fetchWeather); $('fetch-elevation').addEventListener('click', fetchElevation); $('fetch-course').addEventListener('click', fetchCourse);
-$('location').addEventListener('click', startGps); $('stop-gps').addEventListener('click', () => stopGps().catch(e => notify(e.message)));
+$('location').addEventListener('click', startGps); $('stop-gps').addEventListener('click', () => setPositionMode('manual').catch(e => notify(e.message)));
+document.querySelectorAll('[data-position-mode]').forEach(button => button.addEventListener('click', () => setPositionMode(button.dataset.positionMode).catch(e => notify(e.message))));
+document.querySelectorAll('[data-place-point]').forEach(button => button.addEventListener('click', () => choosePoint(button.dataset.placePoint)));
+$('try-demo').addEventListener('click', () => tryDemo().catch(e => notify(e.message)));
 $('settings-open').addEventListener('click', () => { $('api-base').value = state.apiBase; $('settings-error').hidden = true; $('settings').showModal(); });
 $('save-settings').addEventListener('click', () => {
   const value = $('api-base').value.trim().replace(/\/+$/, '');
@@ -354,5 +404,5 @@ $('save-settings').addEventListener('click', () => {
 });
 setupMap(); syncManual(); weatherVisuals(); loadMetadata();
 setInterval(updateWeatherStatus, 60000);
-document.addEventListener('visibilitychange', () => { if (document.hidden && state.watchId !== null) stopGps().catch(e => notify(e.message)); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state.watchId !== null) setPositionMode('manual', false).catch(e => notify(e.message)); });
 // Course retrieval is explicit: no hidden GPS permissions or fabricated demo holes.

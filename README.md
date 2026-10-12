@@ -20,6 +20,20 @@ Väder och terränghöjd har verifierats med riktiga svar från Open-Meteo, och 
 
 ## Starta utvecklingsmiljön
 
+### Prova på dator utan Java
+
+Ladda ner projektet från GitHub via **Code → Download ZIP** och packa upp det. Öppna sedan **`golf-caddie-prototyp.html`** i Chrome eller Edge. Filen finns redan i projektets rot, och all kod och de lokala banfakta som behövs är inkluderade. Ingen Java-server eller installation behövs för beräkningen. Kartbilder och hämtat väder kräver internet.
+
+För att ändra CSS och direkt se resultatet: öppna **`prototype/index.html`** i webbläsaren och redigera **`mobile/www/style.css`** i din editor. Spara och ladda om sidan. Denna version använder projektets separata CSS- och JavaScript-filer, så behåll mappstrukturen från ZIP-filen.
+
+`python3 scripts/export-prototype.py` uppdaterar båda prototypversionerna efter ändringar i appen och skapar även en lokal kopia i `.runtime/`. Den fristående rotfilen har inbakad CSS; kör exportkommandot när du vill uppdatera den efter CSS-ändringar.
+
+Välj **Placera själv** för att prova hemifrån. **Prova ett slag · 160 m** lägger ut två exempelpositioner inom The Nationals område. Använd **Placera boll** / **Välj mål**, eller dra markörerna. **Använd GPS** följer din verkliga plats; byte tillbaka till Placera själv stänger GPS och återgår till National-vyn.
+
+Den fristående prototypen har en kopia av Java-modellen som jämförs mot Java-API:t i 48 scenarier via `node scripts/check-prototype-model.mjs`. `python3 scripts/smoke-prototype.py` verifierar det exporterade gränssnittet utan nätverks- eller backendåtkomst. Molnets hanterade Chromium blockerar `file://`; därför laddar testet filens innehåll via en lokal testfixture. Direkt filöppning på användarens egen dator har inte verifierats här.
+
+### Java-server och mobilprojekt
+
 Från repositoryts rot:
 
 ```bash
