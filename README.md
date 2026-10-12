@@ -20,6 +20,10 @@ Väder och terränghöjd har verifierats med riktiga svar från Open-Meteo, och 
 
 ## Starta utvecklingsmiljön
 
+### iPhone utan dator eller Java-server
+
+En installerbar iPhone-version finns i **`iphone/`**. Den läggs på hemskärmen via Safari och kör beräkningen på telefonen, även offline efter första laddningen. Publiceringsflöde för GitHub Pages ingår. Kartbilder, nytt väder och höjddata behöver internet. Se [installation och publicering för iPhone](docs/IPHONE.md).
+
 ### Prova på dator utan Java
 
 Ladda ner projektet från GitHub via **Code → Download ZIP** och packa upp det. Öppna sedan **`golf-caddie-prototyp.html`** i Chrome eller Edge. Filen finns redan i projektets rot, och all kod och de lokala banfakta som behövs är inkluderade. Ingen Java-server eller installation behövs för beräkningen. Kartbilder och hämtat väder kräver internet.

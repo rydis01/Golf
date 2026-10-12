@@ -44,9 +44,17 @@ window.GolfPrototype = (() => {
     };
   }
   async function provider(url) {
-    const response = await fetch(url, { signal: AbortSignal.timeout(18000) });
-    if (!response.ok) throw new Error('Väder- eller höjddata kunde inte hämtas. Ange värden manuellt.');
-    return response.json();
+    if (!navigator.onLine) throw new Error('Du är offline. Ange väder och höjd manuellt; beräkningen fungerar på telefonen.');
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 18000);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error('Väder- eller höjddata kunde inte hämtas. Ange värden manuellt.');
+      return await response.json();
+    } catch (error) {
+      if (error.name === 'AbortError') throw new Error('Väderförfrågan tog för lång tid. Ange värden manuellt eller försök igen.');
+      if (error instanceof TypeError) throw new Error('Väder- eller höjdtjänsten kunde inte nås. Ange värden manuellt.');
+      throw error;
+    } finally { clearTimeout(timer); }
   }
   async function api(path, options) {
     if (path === '/api/shot') return calculate(JSON.parse(options.body));
