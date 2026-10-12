@@ -1,0 +1,7 @@
+{
+  "appId": "se.golf.caddie",
+  "appName": "Golf Caddie",
+  "webDir": "www",
+  "android": {"allowMixedContent": false},
+  "ios": {"contentInset": "always"}
+}

@@ -1,0 +1,20 @@
+{
+  "name": "golf-caddie-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Golf Caddie for Android and iOS, with a Java calculation API",
+  "scripts": {
+    "prepare-assets": "node ../scripts/mobile-assets.mjs",
+    "sync": "npm run prepare-assets && cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios",
+    "check": "node --check www/app.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.3",
+    "@capacitor/core": "7.4.3",
+    "@capacitor/geolocation": "7.1.5",
+    "@capacitor/ios": "7.4.3"
+  },
+  "devDependencies": {"@capacitor/cli": "7.4.3"}
+}
