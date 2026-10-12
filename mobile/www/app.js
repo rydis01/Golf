@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const isNative = () => Boolean(window.Capacitor?.isNativePlatform());
 const state = { ball: null, target: null, lie: 'fairway', course: 'links', positionMode: 'manual', placePoint: 'ball', watchId: null, gps: null, weather: null, courseData: null, layer: null, apiBase: '' };
 try { state.apiBase = localStorage.getItem('golf-api-base') ?? window.GOLF_CONFIG?.apiBase ?? ''; } catch { state.apiBase = window.GOLF_CONFIG?.apiBase ?? ''; }
+if (window.GOLF_LOCAL_ONLY) { state.apiBase = ''; $('settings-open').hidden = true; }
 let map, ballMarker, targetMarker, shotLine, gpsMarker, gpsCircle, courseLayer, courseRequest = 0, weatherRequest = 0, elevationRequest = 0, calculationRequest = 0;
 let toastTimer;
 let nationalMetadata;
