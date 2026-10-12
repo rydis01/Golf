@@ -1,4 +1,4 @@
-# Beräkningsmodell v1
+# Beräkningsmodell wind-v2
 
 Resultatet betyder: **välj den klubba som normalt bär detta avstånd under referensförhållanden**. Referensen är lugn vind, 20 °C, 50 % relativ luftfuktighet, 1013,25 hPa lokalt lufttryck, plan mark och ren fairwaykontakt. Avstånd avser carry till en vald landningspunkt. Rull efter landning ingår inte.
 
@@ -16,9 +16,44 @@ sidvindskomponent = v × sin(a)
 vindjustering = avstånd × motvindskomponent × koefficient × bollbanefaktor
 ```
 
-Positiv komponent är motvind, negativ är medvind. Koefficienten är 0,012 per m/s i motvind och 0,008 i medvind. Bollbanefaktor är 0,75 för låg, 1 för normal och 1,25 för hög. Sidvind visas som riktning och m/s; ingen sidförflyttning i meter eller automatisk siktjustering utlovas.
+Positiv komponent är motvind, negativ är medvind. Koefficienten är 0,012 per m/s i motvind och 0,008 i medvind. Bollbanefaktor är 0,75 för låg, 1 för normal och 1,25 för hög. Sidovind ger dessutom en uppskattad drift i meter och ett motsvarande siktråd enligt modellen nedan.
 
 Open-Meteos medelvind och byar kommer från en vädermodell på 10 meters höjd. Vind vid bollen kan avvika på grund av träd, byggnader och terräng. Medelvinden styr mittvärdet; byarna ökar osäkerhetsmarginalen. En vindkompasspil visar vart luften rör sig.
+
+## Sidovind och sikte
+
+Modellen antar ett rakt slag utan avsiktlig skruv. Standardflygtiden är `1,15 × sqrt(2 × avstånd × tan(35°) / g) × bollbanefaktor`, med minst en sekund. 35° är en effektiv parameter för flygtidsuppskattningen, inte en uppmätt launchvinkel. Spelaren kan ange en uppmätt flygtid (1–15 sekunder) som ersätter uppskattningen.
+
+Sidledsdraget approximeras med en konstant respons mot sidvinden:
+
+```
+relativ lufthastighet = max(8, hypot(avstånd/flygtid + motvind, sidvind))
+tau = 2 × bollmassa / (luftdensitet × Cd × bollarea × relativ lufthastighet)
+respons = flygtid − tau × (1 − exp(−flygtid/tau))
+sidodrift = −sidvind × respons
+siktförskjutning = −sidodrift
+```
+
+Bollmassa antas vara 45,93 g, diameter 42,67 mm och dragkoefficient `Cd = 0,25`. Positiv sidodrift betyder höger; vind från höger ger alltså drift åt vänster och ett siktråd åt höger. Den numeriska modellen använder `expm1` för stabil beräkning vid kort flygtid.
+
+Sidomarginalen är `max(3 m, 4 % av carry) + 30 % av |driften| + sidledskomponenten av extra vindbyar × respons`. Det är en heuristisk marginal som inkluderar en grov grundvariation för ett rakt slag. Den är inte ett konfidensintervall och ersätter inte en personlig spridningsmodell. Spinn, Magnus-kraft, skruv, varierande vind med höjd och förändringar längs hela flygbanan är inte simulerade. Testerna kontrollerar beräkningsbeteendet, inte fysisk precision på banan.
+
+## Kikare och manuell flagga
+
+Flaggan sätts av spelaren på kartan. Ingen hämtad OSM-pin används som dagens flagga. Ett uppmätt kikaravstånd är förstahandsvärde framför kartans/GPS-avståndets längd; riktningen behöver fortfarande vara markerad på kartan eller anges i grader.
+
+- **Utan slope:** avståndet behandlas som siktlinjens längd. Vid känd höjdskillnad räknas horisontellt avstånd som `sqrt(mätning² − höjd²)` innan modellens höjdjustering läggs till.
+- **Med slope:** kikarens värde behandlas som ett redan höjdkorrigerat spelavstånd. Modellens ytterligare höjdjustering sätts till noll; vind, luft och bolläge justeras därefter.
+
+En mer precis mållängd betyder inte att vind- eller slagspridningen blir säkrare. Mätningen nollställs vid hålbyte och när bollens plats eller flaggmål har ändrats tydligt. GPS-brus hanteras med rapporterad noggrannhet som tröskel.
+
+## Landningsyta och riskområden
+
+Rådet använder verkliga OSM-polygontyper för green, bunker och vatten. Endast en flagga inom en kartlagd green kan få ett landningsförslag. En cirkulär buffert byggs av den största av längd- och sidomarginalen, minst fyra meter, plus rapporterad GPS-noggrannhet i GPS-läge. Bufferten är ett planeringshjälpmedel, inte en sannolikhetsmodell eller garanti.
+
+Appen provar punkter på samma green och väger avstånd till riskområden/greenkant mot avståndet från flaggan. Ett alternativ erbjuds om det ger mer utrymme än flaggan. Om hela modellmarginalen fortfarande inte ryms sägs det uttryckligen. Användaren väljer själv om alternativet ska bli slagets mål; flaggan ligger kvar.
+
+Om kikaren används till flaggan justeras avståndet till en vald alternativ yta med skillnaden mellan de två kartavstånden från bollen. Förskjutningen är därför uppskattad och höjden antas lika vid flagga och alternativ. Appen beskriver detta som kartuppskattning. Kartor kan sakna hinder eller vara inaktuella, och rull ingår inte.
 
 ## Höjd och luft
 

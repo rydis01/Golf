@@ -1,6 +1,6 @@
 'use strict';
 const CACHE = 'golf-caddie-iphone-__CACHE_VERSION__';
-const ASSETS = ['./', './index.html', './install.js', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
+const ASSETS = ['./', './index.html', './install.js', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png', ...__GUIDE_ASSETS__];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
 });

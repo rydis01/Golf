@@ -20,6 +20,16 @@
             "58": 275,
             "53": 225,
             "49": 220
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links1-1.png",
+            "localPath": "guides/links-01.png",
+            "sha256": "be6f02b0b795da296e24460374d7a424d5ad2b332d309429f0149481d89d7d1a",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:49.210568+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -33,6 +43,16 @@
             "58": 450,
             "53": 405,
             "49": 365
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links2-1.png",
+            "localPath": "guides/links-02.png",
+            "sha256": "07eeea6e9b328586b2a5e60d2417f829e68d6e63bc8e00a9ff838fa7195f50e0",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:49.036923+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -46,6 +66,16 @@
             "58": 320,
             "53": 255,
             "49": 255
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links3-1.png",
+            "localPath": "guides/links-03.png",
+            "sha256": "b389825ce28eed83908638776e47460f280d8af6a5cf1e2136905d1e9ba124be",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:49.271054+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -59,6 +89,16 @@
             "58": 355,
             "53": 305,
             "49": 305
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links4-1.png",
+            "localPath": "guides/links-04.png",
+            "sha256": "18d94e473b1473914a18cd8797770be7a9c82c75a9868d3fcdd79e9616d806a9",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:50.646805+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -72,6 +112,16 @@
             "58": 90,
             "53": 85,
             "49": 75
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links5-1.png",
+            "localPath": "guides/links-05.png",
+            "sha256": "707f17b53e6ae274dc2be7ef6a2170717aff29affb82928676d289dd5d17d115",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:50.345244+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -85,6 +135,16 @@
             "58": 380,
             "53": 360,
             "49": 325
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links6-1.png",
+            "localPath": "guides/links-06.png",
+            "sha256": "50aa4f90c3fd343a0a6f7e7f670782dba5a44244f9d586d8f97c49cac369ff7c",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:50.637994+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -98,6 +158,16 @@
             "58": 150,
             "53": 130,
             "49": 105
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links7-1.png",
+            "localPath": "guides/links-07.png",
+            "sha256": "4874ddb18f904e05db61a4a289dba0bb5bde21fea3f2e5f2ed5da4c4ba0578d6",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:49.782572+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -111,6 +181,16 @@
             "58": 455,
             "53": 400,
             "49": 400
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links8-1.png",
+            "localPath": "guides/links-08.png",
+            "sha256": "64b0a1dff9bf71669462b37bc751d516a1a4238aa314487d7409521f045d07e2",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:50.641539+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -124,6 +204,16 @@
             "58": 355,
             "53": 355,
             "49": 325
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links9-1.png",
+            "localPath": "guides/links-09.png",
+            "sha256": "61c1efe8b4aa36ccfff779f41212873922f617a68e911619049335a0bff47d75",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:50.609854+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -137,6 +227,16 @@
             "58": 345,
             "53": 320,
             "49": 253
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links10-1.png",
+            "localPath": "guides/links-10.png",
+            "sha256": "607fccfc21af24c0803eb438bd838d4a81e2b9d0bba1d5b83147bb4bc73e5d28",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.648839+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -150,6 +250,16 @@
             "58": 500,
             "53": 457,
             "49": 457
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links11-1.png",
+            "localPath": "guides/links-11.png",
+            "sha256": "165fb5549173c3aeade438d7292c0bd8479540536dc7a7e26f5b8cd4e5d0b637",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.067219+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -163,6 +273,16 @@
             "58": 335,
             "53": 315,
             "49": 288
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links12-1.png",
+            "localPath": "guides/links-12.png",
+            "sha256": "403f638d22d8287fbe38de8021ff0b9018d24f7c4e2136268fa740818ca8f821",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.836891+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -176,6 +296,16 @@
             "58": 135,
             "53": 135,
             "49": 95
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links13-1.png",
+            "localPath": "guides/links-13.png",
+            "sha256": "cfc50c2b46e2265f828765ddd91d5be0c275281c657c9398a43df8726ed59eb9",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.164908+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -189,6 +319,16 @@
             "58": 380,
             "53": 380,
             "49": 297
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links14-1.png",
+            "localPath": "guides/links-14.png",
+            "sha256": "138de0162ca477cc5dad000b2eec407a7367ccd5b8d0dd4f2ee2b08384a9f0dd",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.620317+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -202,6 +342,14 @@
             "58": 435,
             "53": 410,
             "49": 410
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2026/03/Links_15.webp",
+            "localPath": "guides/links-15.webp",
+            "sha256": "4c8f6b6881cc9458d33dcc515ef72a98f5de738677f86c22f2dc4683880572d8",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.467288+00:00",
+            "georeferenced": false
           }
         },
         {
@@ -215,6 +363,16 @@
             "58": 310,
             "53": 310,
             "49": 255
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links16-1.png",
+            "localPath": "guides/links-16.png",
+            "sha256": "04c9117738309fb549556af0dd9fffa074d7e4e297968c6904999e7f15723161",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.835754+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -228,6 +386,16 @@
             "58": 135,
             "53": 135,
             "49": 90
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links17-1.png",
+            "localPath": "guides/links-17.png",
+            "sha256": "54a9f9724eeb0693456686f042deb18dbc763cf8dd4a457e94313eaa67a3b3bf",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:51.977946+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -241,6 +409,16 @@
             "58": 385,
             "53": 350,
             "49": 335
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Links18-1.png",
+            "localPath": "guides/links-18.png",
+            "sha256": "2ef1396498ca9bb9040bb90e096b4499caf0f802d3bb2161295adb59820b4f7f",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:52.384064+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         }
       ]
@@ -262,6 +440,16 @@
             "54": 430,
             "51": 420,
             "48": 420
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes1-1.png",
+            "localPath": "guides/lakes-01.png",
+            "sha256": "c9695e8fe7f862e142db3ce1b590a2bc79c71a6443c2f5621eb2583cae244351",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:52.381104+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -276,6 +464,16 @@
             "54": 330,
             "51": 330,
             "48": 254
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes2-1.png",
+            "localPath": "guides/lakes-02.png",
+            "sha256": "fa7fa2b6143cb5ade713e4c467a82fc6be6eac8e4e74e17f7a9f64f1ed9fa1ce",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:52.390056+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -290,6 +488,16 @@
             "54": 330,
             "51": 310,
             "48": 245
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes3-1.png",
+            "localPath": "guides/lakes-03.png",
+            "sha256": "52b9a242dc1baab1c7cee162f692fbc3cab0da88f1b99d795886ba00340252b8",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:52.409687+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -304,6 +512,14 @@
             "54": 145,
             "51": 105,
             "48": 105
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2026/03/Lakes_04.webp",
+            "localPath": "guides/lakes-04.webp",
+            "sha256": "ca38106559bb3a38b2e13a88db86ef6a8f58c4d40b20ba9ba6cfcd859bb214fc",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:52.766693+00:00",
+            "georeferenced": false
           }
         },
         {
@@ -318,6 +534,16 @@
             "54": 290,
             "51": 252,
             "48": 242
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes5-1.png",
+            "localPath": "guides/lakes-05.png",
+            "sha256": "088449e4c82de4704f83517bcf14639e31415a97c6e626701b0ca59598073af5",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.156838+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -332,6 +558,14 @@
             "54": 125,
             "51": 90,
             "48": 90
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2026/03/Lakes_06.webp",
+            "localPath": "guides/lakes-06.webp",
+            "sha256": "7bb07ec6c962d43a8b5151cf4e8b7d2ab0ed020554074746262ba002a9098665",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:52.815927+00:00",
+            "georeferenced": false
           }
         },
         {
@@ -346,6 +580,16 @@
             "54": 305,
             "51": 305,
             "48": 305
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes7-1.png",
+            "localPath": "guides/lakes-07.png",
+            "sha256": "c1d6254fdc13e3e8711873cfb5652eac516ee20e5e969acdac1aa7598b819100",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.157595+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -360,6 +604,16 @@
             "54": 465,
             "51": 417,
             "48": 417
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes8-1.png",
+            "localPath": "guides/lakes-08.png",
+            "sha256": "0e25e01e39581e3419cc90e81f08eacee325ed4fbecb7fb94116967698316068",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.039798+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -374,6 +628,16 @@
             "54": 318,
             "51": 318,
             "48": 318
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes9-1.png",
+            "localPath": "guides/lakes-09.png",
+            "sha256": "582f8d6c3a355b35cdece99d9ca540cd61cd9673ad14e6416b443504397bf89a",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.203018+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -388,6 +652,16 @@
             "54": 340,
             "51": 300,
             "48": 300
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes10-1.png",
+            "localPath": "guides/lakes-10.png",
+            "sha256": "bfbdadc5ee17a315b4e0809a1e6df5213caae18eb09383a86ca6d3d3e556bd64",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.392309+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -402,6 +676,16 @@
             "54": 415,
             "51": 376,
             "48": 376
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes11-1.png",
+            "localPath": "guides/lakes-11.png",
+            "sha256": "442c7cc7b2409df8ba3b9db5a0b06d98f1d596802a76a489e2819399b2a1d65c",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.622332+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -416,6 +700,16 @@
             "54": 290,
             "51": 290,
             "48": 290
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes12-1.png",
+            "localPath": "guides/lakes-12.png",
+            "sha256": "7d19c2478f67ea40fc609f0296b89357af6500b36f80dda0a3714d3815eb1a5e",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.589424+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -430,6 +724,16 @@
             "54": 290,
             "51": 290,
             "48": 290
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes13-1.png",
+            "localPath": "guides/lakes-13.png",
+            "sha256": "612f8648b9a2b39566ea9052c4f9a8f328ec9ac23c9498826a9baefaaff77a81",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.610212+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -444,6 +748,16 @@
             "54": 275,
             "51": 255,
             "48": 255
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes14-1.png",
+            "localPath": "guides/lakes-14.png",
+            "sha256": "0b08a67cc4b54dd44c8c0c2fccebf8caf098b73f63930f37ec31f613815d71bf",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.747959+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -458,6 +772,16 @@
             "54": 138,
             "51": 138,
             "48": 112
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes15-1.png",
+            "localPath": "guides/lakes-15.png",
+            "sha256": "7072520572783e067e4dafc69a457d44cca2993c50a215f8b977ca8e66214dd7",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:54.138687+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -472,6 +796,16 @@
             "54": 330,
             "51": 330,
             "48": 308
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes16-1.png",
+            "localPath": "guides/lakes-16.png",
+            "sha256": "f0fdcbbdc7dc232b52d3ae91a4c743a4210c2c1315da0f21ed14ef4516a6f4a2",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:54.143315+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -486,6 +820,16 @@
             "54": 131,
             "51": 116,
             "48": 96
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes17-1.png",
+            "localPath": "guides/lakes-17.png",
+            "sha256": "3241b48c9d43c0dfda7778019a396b6fb617f5af73883fa939d8540086f113b1",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:53.911575+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         },
         {
@@ -500,6 +844,16 @@
             "54": 417,
             "51": 417,
             "48": 417
+          },
+          "guide": {
+            "sourceUrl": "https://thenational.se/wp-content/uploads/2025/03/Lakes18-1.png",
+            "localPath": "guides/lakes-18.png",
+            "sha256": "c613ab370083c056cc20e9d9124ace4becfa0b3d159dc046766e0efbd28f4165",
+            "attribution": "The National · officiell banguide",
+            "fetchedAt": "2026-10-12T13:22:54.144732+00:00",
+            "georeferenced": false,
+            "width": 1146,
+            "height": 1819
           }
         }
       ]

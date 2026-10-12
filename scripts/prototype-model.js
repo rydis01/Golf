@@ -1,5 +1,5 @@
 'use strict';
-// Browser-only prototype of empirical-v1. The installed app's authoritative model is Java.
+// Browser-only version of wind-v2, verified against the Java implementation.
 // scripts/check-prototype-model.mjs compares this prototype with the running Java API.
 window.GolfPrototype = (() => {
   const round = n => Math.round(n * 10) / 10;
@@ -25,16 +25,27 @@ window.GolfPrototype = (() => {
     const raw = distance + wind + height + air + distance * lieFactor;
     const playsLike = Math.max(1, raw);
     const uncertainty = distance * .035 + Math.max(0, w.gusts - w.windSpeed) * distance * .012 * flight + distance * Math.abs(lieFactor) * .75 + (shot.wetBall ? distance * .04 : 0);
+    const time = shot.flightTime ?? Math.max(1, Math.sqrt(2 * distance * Math.tan(35 * Math.PI / 180) / 9.80665) * 1.15 * flight);
+    if (!Number.isFinite(time) || time < 1 || time > 15) throw new Error('Flygtid måste ligga mellan 1 och 15 sekunder.');
+    const area = Math.PI * .04267 ** 2 / 4;
+    const airspeed = Math.max(8, Math.hypot(distance / time + headwind, crosswind));
+    const tau = 2 * .04593 / (airDensity * .25 * area * airspeed);
+    const response = time + tau * Math.expm1(-time / tau);
+    const drift = -crosswind * response;
+    const sideMargin = Math.max(3, distance * .04) + Math.abs(drift) * .30 + Math.max(0, w.gusts - w.windSpeed) * Math.abs(Math.sin(angle)) * response;
+    const aimBearing = (bearing + Math.atan2(-drift, distance) * 180 / Math.PI + 360) % 360;
     const warnings = ['Öppningsbar prototyp med samma startmodell som Java-servern. Inte validerad mot dina egna slag; carry utan rull.'];
     if (lieFactor !== 0) warnings.push('Bolläget ger stor osäkerhet. Kontrollera gräs, kontakt och risk för flyer.');
     if (shot.wetBall) warnings.push('Våt boll eller vått gräs kan ändra kontakt och spinn. Ingen fast meterjustering används; marginalen ökas.');
-    if (Math.abs(crosswind) > 2) warnings.push('Sidvind visas separat. Exakt siktkompensation beräknas inte.');
+    if (Math.abs(crosswind) > 2) warnings.push('Sidovind beräknas för ett rakt slag. Egen skruv, spinn och vind på olika höjder kan ändra både drift och siktråd.');
     if (w.windSpeed >= 8) warnings.push('Stark vind: den förenklade modellen blir mindre tillförlitlig.');
     if (Math.abs(shot.elevationChange) > 20) warnings.push('Stor höjdskillnad: kontrollera att detta fortfarande är ett rimligt slag.');
     if (raw < 1) warnings.push('Extrema förhållanden: använd inte modellen för klubbval.');
+    if (Math.abs(drift) > distance * .3) warnings.push('Mycket stor sidovindsdrift. Modellen är osäker; överväg ett annat slag eller en lägre bollbana.');
     return {
       distance: round(distance), bearing: round(bearing), playsLike: round(playsLike), rangeLow: round(Math.max(1, playsLike - uncertainty)), rangeHigh: round(playsLike + uncertainty),
       headwind: round(headwind), crosswind: round(crosswind), airDensity: Math.round(airDensity * 1000) / 1000,
+      flightTime: round(time), flightTimeMeasured: shot.flightTime != null, lateralDrift: round(drift), lateralLow: round(drift-sideMargin), lateralHigh: round(drift+sideMargin), aimOffset: round(-drift), aimBearing: round(aimBearing),
       adjustments: [
         { label: 'Vind', meters: round(wind), explanation: 'Motvind ökar spelavståndet; medvind minskar det. Hög bollbana påverkas mer.' },
         { label: 'Höjd', meters: round(height), explanation: 'Mål över bollen ökar spelavståndet. Förenklad modell för höjd och bollbana.' },
@@ -58,7 +69,7 @@ window.GolfPrototype = (() => {
   }
   async function api(path, options) {
     if (path === '/api/shot') return calculate(JSON.parse(options.body));
-    if (path === '/api/course') return window.GOLF_BUNDLED_DATA.boundary;
+    if (path === '/api/course') return window.GOLF_BUNDLED_DATA.geometry || window.GOLF_BUNDLED_DATA.boundary;
     const q = new URL('https://prototype.invalid' + path).searchParams;
     if (path.startsWith('/api/weather?')) {
       const params = new URLSearchParams({ latitude: q.get('lat'), longitude: q.get('lon'),

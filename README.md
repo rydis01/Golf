@@ -2,27 +2,29 @@
 
 Första mobilversionen för Links och Lakes på The National i Bara. Appen räknar ett **spelavstånd för carry**, med hänsyn till vind, höjd, temperatur, luftfuktighet, lokalt lufttryck och bolläge. Exempel: 160 meter till målet kan behöva spelas som ett kortare slag i medvind.
 
-Beräkningen är skriven i **Java 21**. Mobilgränssnittet använder HTML/CSS/JavaScript och Leaflet och paketeras med Capacitor för **Android och iOS**. Androids native-projekt innehåller Java; iOS använder Capacitors Swift-brygga. Beräkningar körs på Java-servern, så mobilappen behöver en nätverksanslutning och en tillgänglig server.
+Beräkningen är skriven i **Java 21**. Mobilgränssnittet använder HTML/CSS/JavaScript och Leaflet och paketeras med Capacitor för **Android och iOS**. Androids native-projekt innehåller Java; iOS använder Capacitors Swift-brygga. Capacitor-appen använder Java-servern. iPhone-versionen i `iphone/` och datorprototypen kör samma modell lokalt i JavaScript och behöver ingen server för beräkningen.
 
 ## Vad finns i första versionen?
 
-- Mobilanpassat gränssnitt på svenska med banval Links/Lakes.
-- Stiliserad banvy med verkliga OSM-banformer när de kan hämtas; satellit som alternativ.
-- Animerad GPS-markör, noggrannhetscirkel och slaglinje. GPS används i förgrunden efter ditt godkännande.
-- Placera och dra boll/mål; bollen kan följa GPS. Alternativt ange carryavstånd och slagriktning manuellt.
-- Vindkompass och sex timmars vind-/bydiagram från Open-Meteo.
-- Manuell eller hämtad höjdskillnad, fairway/ruff/flyer/fairwaybunker, bollbana och vått bolläge.
-- Förklarade meterjusteringar, uppskattad marginal och tydlig skillnad mellan manuella och hämtade vädervärden.
+- Välj Links eller Lakes och tee; spela ett hål i taget från 1 till 18. Bana, tee och aktuellt hål sparas lokalt så att rundan kan återupptas.
+- Stiliserad GPS-karta med verkliga geografiska banformer, samt satellit som alternativ. Alla 36 officiella banguidebilder finns som separat referens.
+- Placera och dra boll och dagens flagga själv, eller följ bollen med GPS. Flaggan är aldrig en förinställd veckoposition.
+- Ange avståndskikarens mått till flaggan. Välj vanligt avstånd eller kikare med lutningskompensation, så att höjd inte räknas två gånger.
+- Vindkompass, sex timmars vind-/bydiagram, höjd, temperatur, luftfuktighet, lufttryck, bolläge och bollbana.
+- Uppskattad sidovindsdrift i meter åt höger/vänster, siktkompensation och möjlighet att ange uppmätt flygtid.
+- Förslag på landningspunkt på samma green med större marginal till kända bunkrar, vatten och greenkant. Du väljer själv om förslaget ska användas.
 
-**Officiella par-, HCP- och teeavstånd för alla 36 hål är hämtade och ingår lokalt.** The Nationals yttergräns och kartcentrum är verifierade via OpenStreetMap/Nominatim (way 34563422) och ingår också lokalt. Geografiska Links/Lakes-delgränser och hållinjer har däremot inte importerats ännu. Overpass-importören finns, men leverantören svarade med HTTP 406 vid verifieringen. Banval används bara för geografisk filtrering om källans namn eller banpolygon anger Links/Lakes. Om källan saknar denna tillhörighet visas det uttryckligen; hål och flaggor skapas inte som exempeldata. Hålets totala teeavstånd ersätter aldrig avståndet för ett aktuellt slag.
+**Par, HCP och teeavstånd för alla 36 hål ingår lokalt.** Även 497 geografiska kartobjekt från OpenStreetMap ingår: bland annat fairways, greener och bunkrar. Lakes har verifierade hållinjer för alla 18 hål och kartan fokuserar på valt hål. Links saknar numrerade hållinjer i denna datakälla; välj boll och flagga på kartan själv. Hålets teeavstånd används aldrig som avstånd för ett aktuellt slag.
 
-Väder och terränghöjd har verifierats med riktiga svar från Open-Meteo, och en OpenStreetMap-kartplatta kunde hämtas. Molnets Chromium-test kunde fortfarande inte rendera externa kartplattor; kartvisning på en riktig telefon återstår därför att verifiera. Overpass svarade med HTTP 406 och en alternativ Overpass-tjänst samt LinksView blockerades av nätverksreglerna. Nödvändiga domäner är sparade i miljöutkastet. Manuell beräkning fungerar utan leverantörerna, men mobilappen måste fortfarande nå Java-servern.
+Kartans former ritas i banguidens färger men i verklig geografisk skala, så att GPS-markören följer kartans koordinater. Originalguiden är en illustration utan verifierad georeferering och används därför som separat bild. Kartdata kan sakna hinder eller vara inaktuella. Sidovindsmodellen och landningsrådet är uppskattningar som behöver kalibreras mot verkliga slag.
+
+Väder och terränghöjd har verifierats med riktiga svar från Open-Meteo. Automatiserade GPS-tester använder en simulerad position; GPS och externa satellitplattor på en fysisk iPhone återstår att verifiera.
 
 ## Starta utvecklingsmiljön
 
 ### iPhone utan dator eller Java-server
 
-En installerbar iPhone-version finns i **`iphone/`**. Den läggs på hemskärmen via Safari och kör beräkningen på telefonen, även offline efter första laddningen. Publiceringsflöde för GitHub Pages ingår. Kartbilder, nytt väder och höjddata behöver internet. Se [installation och publicering för iPhone](docs/IPHONE.md).
+En installerbar iPhone-version finns i **`iphone/`**. Den läggs på hemskärmen via Safari och kör beräkningen på telefonen, även offline efter första laddningen. Publiceringsflöde för GitHub Pages ingår. Satellitplattor, nytt väder och höjddata behöver internet. Den stiliserade GPS-kartan och banguidebilderna fungerar offline efter första laddningen. Se [installation och publicering för iPhone](docs/IPHONE.md).
 
 ### Prova på dator utan Java
 
@@ -32,7 +34,7 @@ För att ändra CSS och direkt se resultatet: öppna **`prototype/index.html`** 
 
 `python3 scripts/export-prototype.py` uppdaterar båda prototypversionerna efter ändringar i appen och skapar även en lokal kopia i `.runtime/`. Den fristående rotfilen har inbakad CSS; kör exportkommandot när du vill uppdatera den efter CSS-ändringar.
 
-Välj **Placera själv** för att prova hemifrån. **Prova ett slag · 160 m** lägger ut två exempelpositioner inom The Nationals område. Använd **Placera boll** / **Välj mål**, eller dra markörerna. **Använd GPS** följer din verkliga plats; byte tillbaka till Placera själv stänger GPS och återgår till National-vyn.
+Välj bana och tee och tryck **Starta rundan**. Välj **Placera själv** för att prova hemifrån. **Prova ett slag · 160 m** lägger ut två exempelpositioner inom The Nationals område. Använd **Placera boll** / **Sätt flaggan**, eller dra markörerna. **Använd GPS** följer din verkliga plats; byte tillbaka till Placera själv stänger GPS och återgår till National-vyn.
 
 Den fristående prototypen har en kopia av Java-modellen som jämförs mot Java-API:t i 48 scenarier via `node scripts/check-prototype-model.mjs`. `python3 scripts/smoke-prototype.py` verifierar det exporterade gränssnittet utan nätverks- eller backendåtkomst. Molnets hanterade Chromium blockerar `file://`; därför laddar testet filens innehåll via en lokal testfixture. Direkt filöppning på användarens egen dator har inte verifierats här.
 
@@ -90,17 +92,22 @@ För en installerad mobilapp behöver Java-servern en **publik HTTPS-adress**. �
 cd mobile && npm run check && cd ..
 # Kör medan scripts/start.sh är igång; kräver Python Playwright och Chromium.
 python3 scripts/smoke.py
+node scripts/check-prototype-model.mjs
+node scripts/check-landing-advisor.mjs
+# Med projektroten serverad lokalt på port 8091:
+python3 scripts/smoke-iphone.py
 ```
 
 Java-testerna kontrollerar bland annat vindriktningens tecken, motvind/medvind, sidvind, luftdensitet, höjd, flyer/ruff, vått bolläge, vindbyar, koordinatavstånd och sammanfogning av OSM-relationsgränser. Smoke-testet anropar den riktiga Java-servern och testar gränssnittets beräkning och inmatning. GPS där använder en uttrycklig simulerad webbläsarposition; väderdiagrammet använder en uttrycklig testfixture. Dessa tester bevisar inte GPS på en riktig telefon eller kontakt med väderleverantören.
 
 ## Datakällor och drift
 
-- Banformer: OpenStreetMap / Overpass, © OpenStreetMap contributors, ODbL 1.0.
+- Banformer: OpenStreetMap, © OpenStreetMap contributors, ODbL 1.0. Den lokala importen använder OSM Map API; servern kan också hämta Overpass-data. Återskapa importen med `python3 scripts/import-course-geometry.py sökväg/till/national.osm`.
+- Hålbeskrivningar och 36 oförändrade guidebilder: The National. Källor och attribution finns i `mobile/www/data/national.json`; `python3 scripts/import-guides.py` uppdaterar dem. Bildernas rättigheter tillhör respektive upphovsrättsinnehavare och ingår inte i OSM-licensen.
 - Baskarta: OpenStreetMap-plattor. Satellit: Esri World Imagery med attribution i kartan.
 - Väder och terränghöjd: Open-Meteo. Vind är modellvind på 10 meters höjd; terränghöjd är inte exakt greenhöjd.
-- Kräver åtkomst till `api.open-meteo.com`, `overpass-api.de`, `tile.openstreetmap.org` och `services.arcgisonline.com`. The Nationals webbplats kan användas för senare kontroll mot officiella hålbeskrivningar.
+- Liveväder/höjd, rasterkarta och valfri serverimport använder `api.open-meteo.com`, `tile.openstreetmap.org`, `services.arcgisonline.com` och `overpass-api.de`. Importskripten använder även `api.openstreetmap.org` och `thenational.se`. Lokala beräkningar och inbakad bankarta behöver inte dessa tjänster.
 
 Innan butikspublicering återstår HTTPS-drift, kontroll av leverantörernas villkor och kapacitet för kommersiell användning, riktiga enhetstester, utgivarens integritetspolicy, appikoner, butiksmaterial och signering. Servern är en utvecklingsserver; lägg till begränsning av trafik, lämplig övervakning och skydd vid publik drift. Kontrollera butikernas aktuella SDK-/target-krav innan en release.
 
-Modellen behöver kalibreras mot dina uppmätta carryavstånd på banan. Den identifierar inte bolläge från kartan, räknar inte rull eller exakt siktkompensation och ersätter inte ett uppmätt slag. Se [beräkningsmodellen](docs/MODEL.md). Vind- och höjdkorrigerande hjälpmedel kan vara otillåtna vid tävling; kontrollera gällande regler.
+Modellen behöver kalibreras mot dina uppmätta carryavstånd på banan. Den identifierar inte bolläge från kartan, räknar inte rull eller bollens spinn och ger ingen exakt siktkompensation och ersätter inte ett uppmätt slag. Se [beräkningsmodellen](docs/MODEL.md). Vind- och höjdkorrigerande hjälpmedel kan vara otillåtna vid tävling; kontrollera gällande regler.

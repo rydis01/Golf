@@ -22,10 +22,17 @@ public final class ShotCalculator {
     }
     public record Shot(Point ball, Point target, Double distance, Double bearing,
                        double elevationChange, String lie, String trajectory, boolean wetBall,
-                       Weather weather) {}
+                       Weather weather, Double flightTime) {
+        public Shot(Point ball, Point target, Double distance, Double bearing, double elevationChange,
+                    String lie, String trajectory, boolean wetBall, Weather weather) {
+            this(ball, target, distance, bearing, elevationChange, lie, trajectory, wetBall, weather, null);
+        }
+    }
     public record Adjustment(String label, double meters, String explanation) {}
     public record Result(double distance, double bearing, double playsLike, double rangeLow,
                          double rangeHigh, double headwind, double crosswind, double airDensity,
+                         double flightTime, boolean flightTimeMeasured, double lateralDrift,
+                         double lateralLow, double lateralHigh, double aimOffset, double aimBearing,
                          List<Adjustment> adjustments, List<String> warnings) {}
 
     public static Result calculate(Shot shot) {
@@ -72,7 +79,7 @@ public final class ShotCalculator {
         warnings.add("Startmodell, inte uppmätt bollflykt. Kalibrera med dina egna carryavstånd; rull ingår inte.");
         if (!lie.equals("fairway") && !lie.equals("tee")) warnings.add("Bolläget ger stor osäkerhet. Kontrollera gräset bakom bollen och risken för sämre kontakt eller flyer.");
         if (shot.wetBall) warnings.add("Våt boll eller vått gräs kan ändra kontakt och spinn. Ingen fast meterjustering används; osäkerhetsintervallet ökas.");
-        if (Math.abs(cross) > 2) warnings.add("Sidvind visas separat. Siktkompensation kräver kunskap om bollbana och spinn; den beräknas inte här.");
+        if (Math.abs(cross) > 2) warnings.add("Sidovind beräknas för ett rakt slag. Egen skruv, spinn och vind på olika höjder kan ändra både drift och siktråd.");
         if (w.windSpeed >= 8) warnings.add("Stark vind: den förenklade modellen blir mindre tillförlitlig.");
         if (Math.abs(shot.elevationChange) > 20) warnings.add("Stor höjdskillnad: kontrollera att carry till målet fortfarande är ett rimligt slag.");
         double raw = distance + windMeters + heightMeters + airMeters + distance * lieFactor;
@@ -80,8 +87,22 @@ public final class ShotCalculator {
         if (raw < 1) warnings.add("Extrem kombination av höjd och vind; modellen nådde sin nedre gräns. Använd inte rådet för klubbval.");
         double uncertainty = distance * 0.035 + Math.max(0, w.gusts - w.windSpeed) * distance * 0.012 * flight
                 + distance * Math.abs(lieFactor) * 0.75 + (shot.wetBall ? distance * 0.04 : 0);
+        // Linearized lateral drag response to a constant crosswind. Positive means right.
+        double time = shot.flightTime != null ? shot.flightTime
+                : Math.max(1, Math.sqrt(2 * distance * Math.tan(Math.toRadians(35)) / 9.80665) * 1.15 * flight);
+        range(time, 1, 15, "flygtid");
+        double area = Math.PI * 0.04267 * 0.04267 / 4;
+        double airspeed = Math.max(8, Math.hypot(distance / time + head, cross));
+        double tau = 2 * 0.04593 / (density * 0.25 * area * airspeed);
+        double response = time + tau * Math.expm1(-time / tau);
+        double drift = -cross * response;
+        double sideMargin = Math.max(3, distance * 0.04) + Math.abs(drift) * 0.30
+                + Math.max(0, w.gusts - w.windSpeed) * Math.abs(Math.sin(angle)) * response;
+        double aimBearing = (bearing + Math.toDegrees(Math.atan2(-drift, distance)) + 360) % 360;
+        if (Math.abs(drift) > distance * 0.3) warnings.add("Mycket stor sidovindsdrift. Modellen är osäker; överväg ett annat slag eller en lägre bollbana.");
         return new Result(round(distance), round(bearing), round(plays), round(Math.max(1, plays - uncertainty)),
                 round(plays + uncertainty), round(head), round(cross), Math.round(density * 1000) / 1000.0,
+                round(time), shot.flightTime != null, round(drift), round(drift - sideMargin), round(drift + sideMargin), round(-drift), round(aimBearing),
                 List.copyOf(changes), List.copyOf(warnings));
     }
     public static double distance(Point a, Point b) {
