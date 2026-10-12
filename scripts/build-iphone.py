@@ -24,7 +24,7 @@ head = '''
 </style>
 '''
 html = html.replace('</head>', head+'</head>')
-banner = '''<section class="iphone-status" aria-live="polite"><p id="offline-state">Förbereder appen för användning utan internet…</p><p>Beräkningen körs på telefonen. Kartbilder och nytt väder kräver internet.</p><div class="iphone-install" id="iphone-install">Installera: öppna i Safari → Dela → Lägg till på hemskärmen.</div><button id="install-update" hidden>Uppdatera appen</button></section>'''
+banner = '''<section class="iphone-status" aria-live="polite"><p id="offline-state">Förbereder appen för användning utan internet…</p><p>Beräkningen och hålvyn fungerar offline. Satellitbilder och nytt väder kräver internet.</p><div class="iphone-install" id="iphone-install">Installera: öppna i Safari → Dela → Lägg till på hemskärmen.</div><button id="install-update" hidden>Uppdatera appen</button></section>'''
 html = html.replace('<main>', '<main>'+banner, 1)
 html = html.replace('</body>', '<script src="install.js"></script></body>')
 out = root/'iphone'
