@@ -28,9 +28,10 @@ window.LandingAdvisor = (() => {
     const inside = (polygon,p) => contains(polygon.rings[0],p) && !polygon.rings.slice(1).some(ring=>contains(ring,p));
     const green = polygons.find(p=>p.feature.properties.tags.golf==='green' && inside(p,origin));
     if (!green) return { available:false, message:'Sätt flaggan på en kartlagd green för att bedöma bunker- och vattenrisk kring landningen.' };
-    const side = Math.max(result.lateralHigh-result.lateralDrift,result.lateralDrift-result.lateralLow);
-    const carry = Math.max(result.rangeHigh-result.playsLike,result.playsLike-result.rangeLow);
-    const margin = Math.max(4,side,carry)+(Number.isFinite(gpsAccuracy)?Math.max(0,gpsAccuracy):0);
+    if (result.uncertaintyLimited) return { available:false,message:'Förhållandena ger ett ofullständigt osäkerhetsintervall. Kontrollera mätningarna innan ett landningsförslag används.' };
+    const side = Number.isFinite(result.lateralMargin)?result.lateralMargin:Math.max(result.lateralHigh-result.lateralDrift,result.lateralDrift-result.lateralLow);
+    const carry = Number.isFinite(result.carryMargin)?result.carryMargin:Math.max(result.rangeHigh-result.playsLike,result.playsLike-result.rangeLow);
+    const margin = Math.max(4,side,carry)+Math.max(Number.isFinite(gpsAccuracy)?Math.max(0,gpsAccuracy):0,Number.isFinite(result.distanceUncertainty)?result.distanceUncertainty:0);
     const hazards = polygons.filter(p=>['bunker','water_hazard','lateral_water_hazard'].includes(p.feature.properties.tags.golf) || p.feature.properties.tags.natural==='water')
       .map(p=>({...p,kind:p.feature.properties.tags.golf==='bunker'?'bunker':'vatten'}))
       .filter(p=>inside(p,origin)||boundaryDistance(p.rings[0],origin)<150+margin);

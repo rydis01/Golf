@@ -20,7 +20,7 @@ Arbetsflödet publicerar endast `iphone/`, inte Java-projektet eller resten av r
 
 Välj **Links eller Lakes**, tee och **Starta på hål 1**. Använd pilarna för Föregående/Nästa för hål 1–18; senaste bana, tee och hålnummer sparas lokalt så att du kan fortsätta ronden. Själva boll-/flaggpositionerna och kikaravstånden sparas inte mellan sessioner.
 
-I den avskalade hålvyn visas spelavståndet och en kort förklaring automatiskt när boll och flagga placerats. **Options** öppnar väder, kikarmått, bolläge, höjd och det fullständiga rådet. Hållinjen på Lakes orienteras längs skärmen med green uppåt; nordpilen visar den geografiska riktningen.
+Ingen egen klubbdata eller TrackMan behövs. I den avskalade hålvyn visas spelavståndet och en kort förklaring automatiskt när boll och flagga placerats. **Options** öppnar väder, kikarmått, bolläge, höjd och det fullständiga rådet. Lokalt väder och grov terränghöjd hämtas automatiskt när internet finns; egna ändringar tar över. Vid saknade värden märks antagandet om lugn vind/höjd i spelvyn. Beräkningsmodellen wind-v3 löser längd och sidovindssikte tillsammans och använder en effektiv böjd bollbana för höjden. Hållinjen på Lakes orienteras längs skärmen med green uppåt; nordpilen visar den geografiska riktningen.
 
 På banan väljer du **Använd GPS** och godkänner platsåtkomst, sätter dagens flagga själv och fyller vid behov i kikaravstånd. Välj om kikaren visar utan eller med slope. Sidovindsrådet anger uppskattad drift och sikte. Ett landningsförslag vid bunker/vatten behöver väljas av dig innan slaget räknas om. Hemifrån kan du välja **Placera själv** eller **Options → Prova ett slag · 160 m**. GPS startar endast efter ditt val och stoppas när du byter till manuell placering eller när appen går till bakgrunden.
 

@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -47,12 +48,17 @@ public final class Main {
                     byte[] body = ex.getRequestBody().readNBytes(16_385);
                     if (body.length > 16_384) { respond(ex, 413, Map.of("error", "För stor begäran.")); return; }
                     var request = JSON.readTree(body);
-                    if (request instanceof com.fasterxml.jackson.databind.node.ObjectNode object && !object.has("flightTime")) object.putNull("flightTime");
+                    if (request instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
+                        for (String field : List.of("flightTime", "descentAngle", "uncertainty")) if (!object.has(field)) object.putNull(field);
+                        if (object.get("uncertainty") instanceof com.fasterxml.jackson.databind.node.ObjectNode uncertainty) {
+                            for (String field : List.of("distance", "elevation", "windDirection")) if (!uncertainty.has(field)) uncertainty.putNull(field);
+                        }
+                    }
                     respond(ex, 200, ShotCalculator.calculate(JSON.treeToValue(request, ShotCalculator.Shot.class)));
                 } else if (!ex.getRequestMethod().equals("GET")) {
                     respond(ex, 405, Map.of("error", "Använd GET."));
                 } else switch (path) {
-                    case "/api/health" -> respond(ex, 200, Map.of("status", "ok", "model", "wind-v2", "java", Runtime.version().feature()));
+                    case "/api/health" -> respond(ex, 200, Map.of("status", "ok", "model", "wind-v3", "java", Runtime.version().feature()));
                     case "/api/course" -> respond(ex, 200, COURSES.load());
                     case "/api/weather" -> {
                         Map<String, String> q = query(ex);

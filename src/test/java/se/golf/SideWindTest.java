@@ -12,7 +12,8 @@ class SideWindTest {
         var result=ShotCalculator.calculate(shot(0,90,5,"normal",null));
         assertTrue(result.lateralDrift()<0);assertTrue(result.aimOffset()>0);
         assertTrue(result.aimBearing()>0 && result.aimBearing()<10);
-        assertEquals(-result.lateralDrift(),result.aimOffset(),.001);
+        assertTrue(result.aimOffset() >= Math.abs(result.lateralDrift()));
+        assertEquals(Math.toDegrees(Math.atan2(result.aimOffset(),result.distance())),result.aimBearing(),.1);
     }
     @Test void reversingCrosswindReversesDriftAndAim() {
         var right=ShotCalculator.calculate(shot(0,90,5,"normal",null));

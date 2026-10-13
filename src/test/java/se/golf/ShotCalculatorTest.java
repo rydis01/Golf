@@ -23,9 +23,10 @@ class ShotCalculatorTest {
         assertTrue(ShotCalculator.calculate(shot(180, 5, 0, 0, "fairway", false)).playsLike() < 160);
         assertTrue(ShotCalculator.calculate(shot(90, 5, 90, 0, "fairway", false)).playsLike() > 160);
     }
-    @Test void pureCrosswindDoesNotInventCarryOrAimCorrection() {
+    @Test void crosswindAimAlsoChangesRequiredCarry() {
         var result = ShotCalculator.calculate(shot(0, 5, 90, 0, "fairway", false));
-        assertEquals(160, result.playsLike()); assertEquals(5, result.crosswind());
+        assertTrue(result.playsLike() >= 160); assertEquals(5, result.crosswind());
+        assertTrue(result.aimOffset() > 0);
         assertTrue(result.warnings().stream().anyMatch(s -> s.contains("Sidovind")));
     }
     @Test void elevationAndLieAffectCarryInExpectedDirection() {

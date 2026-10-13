@@ -27,3 +27,8 @@ assert.equal(analyze(origin, [centered], result).candidate, null);
 const water = polygon({ natural: 'water' }, [[-10,-10],[-4,-10],[-4,10],[-10,10],[-10,-10]]);
 assert.equal(analyze(origin, [green,water], result).nearest.kind, 'vatten');
 console.log('PASS: bunker/water proximity, alternative on same green, missing green, GPS margin and ample flag clearance.');
+const physical={...result,rangeLow:120,rangeHigh:180,carryMargin:6,lateralMargin:7,distanceUncertainty:3};
+const footprint=analyze(origin,[green,bunker],physical,5);
+assert.equal(footprint.margin,12,'Landing buffer uses actual footprint metres and one position margin, not reference-carry spread');
+assert.equal(analyze(origin,[green,bunker],{...physical,uncertaintyLimited:true}).available,false);
+console.log('PASS: landing/reference units stay separate and incomplete uncertainty blocks landing suggestions.');

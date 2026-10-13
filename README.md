@@ -11,7 +11,8 @@ Beräkningen är skriven i **Java 21**. Mobilgränssnittet använder HTML/CSS/Ja
 - Placera och dra boll och dagens flagga själv, eller följ bollen med GPS. Flaggan är aldrig en förinställd veckoposition.
 - Spelavstånd och en kort förklaring visas automatiskt när boll och mål har placerats. Väder, kikarmått, bolläge och detaljerade råd ligger i **Options**.
 - Ange avståndskikarens mått till flaggan. Välj vanligt avstånd eller kikare med lutningskompensation, så att höjd inte räknas två gånger.
-- Vindkompass, sex timmars vind-/bydiagram, höjd, temperatur, luftfuktighet, lufttryck, bolläge och bollbana.
+- Lokalt väder och grov terränghöjd hämtas automatiskt för slaget. Vindkompass, sex timmars vind-/bydiagram, temperatur, luftfuktighet och lokalt lufttryck. Egna värden i Options tar över.
+- wind-v3 räknar baklänges från carryförlust och löser höjd, längd och sidovindssikte tillsammans. Ingen personlig klubbdata behövs; flygtid och landningsvinkel kan anges frivilligt.
 - Uppskattad sidovindsdrift i meter åt höger/vänster, siktkompensation och möjlighet att ange uppmätt flygtid.
 - Förslag på landningspunkt på samma green med större marginal till kända bunkrar, vatten och greenkant. Du väljer själv om förslaget ska användas.
 
@@ -96,6 +97,7 @@ python3 scripts/smoke.py
 node scripts/check-prototype-model.mjs
 node scripts/check-landing-advisor.mjs
 node scripts/check-hole-view.mjs
+python3 scripts/smoke-conditions.py
 # Med projektroten serverad lokalt på port 8091:
 python3 scripts/smoke-iphone.py
 ```
@@ -112,4 +114,4 @@ Java-testerna kontrollerar bland annat vindriktningens tecken, motvind/medvind, 
 
 Innan butikspublicering återstår HTTPS-drift, kontroll av leverantörernas villkor och kapacitet för kommersiell användning, riktiga enhetstester, utgivarens integritetspolicy, appikoner, butiksmaterial och signering. Servern är en utvecklingsserver; lägg till begränsning av trafik, lämplig övervakning och skydd vid publik drift. Kontrollera butikernas aktuella SDK-/target-krav innan en release.
 
-Modellen behöver kalibreras mot dina uppmätta carryavstånd på banan. Den identifierar inte bolläge från kartan, räknar inte rull eller bollens spinn och ger ingen exakt siktkompensation och ersätter inte ett uppmätt slag. Se [beräkningsmodellen](docs/MODEL.md). Vind- och höjdkorrigerande hjälpmedel kan vara otillåtna vid tävling; kontrollera gällande regler.
+Modellen ger ett generellt nummer att slå utan egna klubbdata. Fysisk träffsäkerhet behöver däremot verifieras och kalibreras mot uppmätta slag på banan. Den identifierar inte bolläge från kartan, räknar inte rull eller bollens spinn och ger ingen exakt siktkompensation och ersätter inte ett uppmätt slag. Se [beräkningsmodellen](docs/MODEL.md). Vind- och höjdkorrigerande hjälpmedel kan vara otillåtna vid tävling; kontrollera gällande regler.
